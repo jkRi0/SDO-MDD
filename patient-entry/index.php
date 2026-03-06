@@ -58,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $entryDate = (string)($_POST['entry_date'] ?? $defaults['entry_date']);
     $fullname = trim((string)($_POST['fullname'] ?? ''));
     $age = trim((string)($_POST['age'] ?? ''));
-    $sex = (string)($_POST['sex'] ?? '');
+    $sexInput = (string)($_POST['sex'] ?? '');
     $address = trim((string)($_POST['address'] ?? ''));
     $dob = (string)($_POST['date_of_birth'] ?? '');
     $civilStatus = trim((string)($_POST['civil_status'] ?? ''));
@@ -66,6 +66,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $division = trim((string)($_POST['division'] ?? $defaults['division']));
     $district = trim((string)($_POST['district'] ?? ''));
     $hmo = trim((string)($_POST['hmo_provider'] ?? ''));
+
+    $sex = match ($sexInput) {
+        'M' => 'Male',
+        'F' => 'Female',
+        'Others' => 'Others',
+        '' => '',
+        default => '__invalid__',
+    };
 
     $divisionLevel = 'DepEd City Schools Division of Cabuyao';
     $validLevels = ['Elementary', 'Secondary', $divisionLevel];
@@ -87,6 +95,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Fullname is required.';
     }
 
+    if ($age === '') {
+        $errors[] = 'Age is required.';
+    }
+
     if ($entryDate === '') {
         $errors[] = 'Date is required.';
     }
@@ -95,35 +107,68 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Age must be a valid number.';
     }
 
+    if ($sex === '') {
+        $errors[] = 'Sex is required.';
+    }
+
     $validSex = ['', 'Male', 'Female', 'Others'];
     if (!in_array($sex, $validSex, true)) {
         $errors[] = 'Invalid sex.';
     }
 
+    if ($address === '') {
+        $errors[] = 'Address is required.';
+    }
+
+    if ($dob === '') {
+        $errors[] = 'Date of Birth is required.';
+    }
+
+    $validCivilStatus = [
+        '',
+        'Single',
+        'Married',
+        'Widowed',
+        'Divorced',
+        'Separated',
+        'Registered Partnership/Civil Union',
+        'Common-Law/Cohabitating',
+    ];
+    if ($civilStatus === '') {
+        $errors[] = 'Civil status is required.';
+    }
+    if (!in_array($civilStatus, $validCivilStatus, true)) {
+        $errors[] = 'Invalid civil status.';
+    }
+
     if (!$errors) {
-        $stmt = db()->prepare(
-            'INSERT INTO patients (school, level, entry_date, fullname, age, sex, address, date_of_birth, civil_status, region, division, district, hmo_provider)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
-        );
+        try {
+            $stmt = db()->prepare(
+                'INSERT INTO patients (school, level, entry_date, fullname, age, sex, address, date_of_birth, civil_status, region, division, district, hmo_provider)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+            );
 
-        $stmt->execute([
-            $school,
-            $level,
-            $entryDate,
-            $fullname,
-            $age === '' ? null : (int)$age,
-            $sex === '' ? null : $sex,
-            $address === '' ? null : $address,
-            $dob === '' ? null : $dob,
-            $civilStatus === '' ? null : $civilStatus,
-            $region === '' ? $defaults['region'] : $region,
-            $division === '' ? $defaults['division'] : $division,
-            $district === '' ? null : $district,
-            $hmo === '' ? null : $hmo,
-        ]);
+            $stmt->execute([
+                $school,
+                $level,
+                $entryDate,
+                $fullname,
+                $age === '' ? null : (int)$age,
+                $sex === '' ? null : $sex,
+                $address === '' ? null : $address,
+                $dob === '' ? null : $dob,
+                $civilStatus === '' ? null : $civilStatus,
+                $region === '' ? $defaults['region'] : $region,
+                $division === '' ? $defaults['division'] : $division,
+                $district === '' ? null : $district,
+                $hmo === '' ? null : $hmo,
+            ]);
 
-        set_flash('success', 'Patient record saved.');
-        redirect('/patient-entry/index.php');
+            set_flash('success', 'Patient record saved.');
+            redirect('/');
+        } catch (Throwable $e) {
+            $errors[] = 'Failed to save patient record. Please try again.';
+        }
     }
 }
 
@@ -183,18 +228,27 @@ $schoolsForLevel = match ($postedLevel) {
 
   <main class="container py-4 py-md-5" style="max-width:980px">
 
-    <?php if ($success): ?>
-      <div class="alert alert-success"><?= e($success) ?></div>
-    <?php endif; ?>
+    <?php if ($success || $errors): ?>
+      <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1080;">
+        <?php if ($success): ?>
+          <div class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="2200">
+            <div class="d-flex">
+              <div class="toast-body text-center"><?= e($success) ?></div>
+              <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+          </div>
+        <?php endif; ?>
 
-    <?php if ($errors): ?>
-      <div class="alert alert-danger">
-        <div class="fw-semibold mb-1">Please fix the following:</div>
-        <ul class="mb-0">
+        <?php if ($errors): ?>
           <?php foreach ($errors as $err): ?>
-            <li><?= e($err) ?></li>
+            <div class="toast align-items-center text-bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="3000">
+              <div class="d-flex">
+                <div class="toast-body text-center"><?= e($err) ?></div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+              </div>
+            </div>
           <?php endforeach; ?>
-        </ul>
+        <?php endif; ?>
       </div>
     <?php endif; ?>
 
@@ -234,37 +288,54 @@ $schoolsForLevel = match ($postedLevel) {
 
             <div class="col-12 col-md-8">
               <label class="form-label">Fullname</label>
-              <input class="form-control" name="fullname" placeholder="SURNAME, FIRSTNAME MIDDLENAME" value="<?= e((string)($_POST['fullname'] ?? '')) ?>" required>
+              <input class="form-control" name="fullname" id="fullnameInput" placeholder="SURNAME, FIRSTNAME MIDDLENAME" value="<?= e((string)($_POST['fullname'] ?? '')) ?>" required>
             </div>
 
             <div class="col-12 col-md-3">
               <label class="form-label">Age</label>
-              <input class="form-control" name="age" inputmode="numeric" value="<?= e((string)($_POST['age'] ?? '')) ?>">
+              <input class="form-control" type="number" name="age" inputmode="numeric" min="0" max="150" step="1" value="<?= e((string)($_POST['age'] ?? '')) ?>" required>
             </div>
 
             <div class="col-12 col-md-3">
               <label class="form-label">Sex</label>
-              <select class="form-select" name="sex">
-                <option value="" <?= ((string)($_POST['sex'] ?? '') === '') ? 'selected' : '' ?>>Select</option>
-                <option value="Male" <?= ((string)($_POST['sex'] ?? '') === 'Male') ? 'selected' : '' ?>>Male</option>
-                <option value="Female" <?= ((string)($_POST['sex'] ?? '') === 'Female') ? 'selected' : '' ?>>Female</option>
-                <option value="Others" <?= ((string)($_POST['sex'] ?? '') === 'Others') ? 'selected' : '' ?>>Others</option>
-              </select>
+              <div class="d-flex align-items-center gap-3" style="min-height: 38px;">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="sex" id="sexM" value="M" <?= ((string)($_POST['sex'] ?? '') === 'M') ? 'checked' : '' ?> required>
+                  <label class="form-check-label" for="sexM">M</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="sex" id="sexF" value="F" <?= ((string)($_POST['sex'] ?? '') === 'F') ? 'checked' : '' ?>>
+                  <label class="form-check-label" for="sexF">F</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="sex" id="sexO" value="Others" <?= ((string)($_POST['sex'] ?? '') === 'Others') ? 'checked' : '' ?>>
+                  <label class="form-check-label" for="sexO">Others</label>
+                </div>
+              </div>
             </div>
 
             <div class="col-12 col-md-6">
               <label class="form-label">Address</label>
-              <input class="form-control" name="address" value="<?= e((string)($_POST['address'] ?? '')) ?>">
+              <input class="form-control" name="address" value="<?= e((string)($_POST['address'] ?? '')) ?>" required>
             </div>
 
             <div class="col-12 col-md-4">
               <label class="form-label">Date of Birth</label>
-              <input class="form-control" type="date" name="date_of_birth" value="<?= e((string)($_POST['date_of_birth'] ?? '')) ?>">
+              <input class="form-control" type="date" name="date_of_birth" value="<?= e((string)($_POST['date_of_birth'] ?? '')) ?>" required>
             </div>
 
             <div class="col-12 col-md-4">
               <label class="form-label">Civil Status</label>
-              <input class="form-control" name="civil_status" value="<?= e((string)($_POST['civil_status'] ?? '')) ?>">
+              <select class="form-select" name="civil_status" required>
+                <option value="" <?= ((string)($_POST['civil_status'] ?? '') === '') ? 'selected' : '' ?>>Select</option>
+                <option value="Single" <?= ((string)($_POST['civil_status'] ?? '') === 'Single') ? 'selected' : '' ?>>Single</option>
+                <option value="Married" <?= ((string)($_POST['civil_status'] ?? '') === 'Married') ? 'selected' : '' ?>>Married</option>
+                <option value="Widowed" <?= ((string)($_POST['civil_status'] ?? '') === 'Widowed') ? 'selected' : '' ?>>Widowed</option>
+                <option value="Divorced" <?= ((string)($_POST['civil_status'] ?? '') === 'Divorced') ? 'selected' : '' ?>>Divorced</option>
+                <option value="Separated" <?= ((string)($_POST['civil_status'] ?? '') === 'Separated') ? 'selected' : '' ?>>Separated</option>
+                <option value="Registered Partnership/Civil Union" <?= ((string)($_POST['civil_status'] ?? '') === 'Registered Partnership/Civil Union') ? 'selected' : '' ?>>Registered Partnership/Civil Union</option>
+                <option value="Common-Law/Cohabitating" <?= ((string)($_POST['civil_status'] ?? '') === 'Common-Law/Cohabitating') ? 'selected' : '' ?>>Common-Law/Cohabitating</option>
+              </select>
             </div>
 
             <div class="col-12 col-md-4">
@@ -356,6 +427,33 @@ $schoolsForLevel = match ($postedLevel) {
       })();
     </script>
 
+    <script>
+      (function(){
+        var el = document.getElementById('fullnameInput');
+        if (!el) return;
+        el.addEventListener('input', function(){
+          var start = el.selectionStart;
+          var end = el.selectionEnd;
+          var next = (el.value || '').toUpperCase();
+          if (el.value !== next) {
+            el.value = next;
+            try { el.setSelectionRange(start, end); } catch (e) {}
+          }
+        });
+      })();
+    </script>
+
   </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    (function(){
+      if (!window.bootstrap) return;
+      var toasts = document.querySelectorAll('.toast');
+      toasts.forEach(function(el){
+        try { new bootstrap.Toast(el).show(); } catch (e) {}
+      });
+    })();
+  </script>
 </body>
 </html>

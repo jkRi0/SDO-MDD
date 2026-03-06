@@ -8,6 +8,9 @@ require __DIR__ . '/app/auth.php';
 $cfg = base_config();
 $user = current_user();
 
+$flashSuccess = get_flash('success');
+$flashError = get_flash('error');
+
 $logoFsPath = __DIR__ . '/public/assets/sdo-logo.png';
 $hasLogo = is_file($logoFsPath);
 
@@ -63,6 +66,32 @@ $hasLogo = is_file($logoFsPath);
   </header>
 
   <main class="container page py-4 py-md-5">
+
+    <?php if ($flashSuccess || $flashError): ?>
+      <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1080;">
+        <?php if ($flashSuccess): ?>
+          <div class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="2200">
+            <div class="d-flex">
+              <div class="toast-body">
+                <?= e($flashSuccess) ?>
+              </div>
+              <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+          </div>
+        <?php endif; ?>
+
+        <?php if ($flashError): ?>
+          <div class="toast align-items-center text-bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="3000">
+            <div class="d-flex">
+              <div class="toast-body">
+                <?= e($flashError) ?>
+              </div>
+              <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+          </div>
+        <?php endif; ?>
+      </div>
+    <?php endif; ?>
 
     <div class="row g-3">
       <?php if ($user && $user['role'] === 'admin'): ?>
@@ -132,5 +161,16 @@ $hasLogo = is_file($logoFsPath);
       </div>
     </div>
   </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    (function(){
+      if (!window.bootstrap) return;
+      var toasts = document.querySelectorAll('.toast');
+      toasts.forEach(function(el){
+        try { new bootstrap.Toast(el).show(); } catch (e) {}
+      });
+    })();
+  </script>
 </body>
 </html>

@@ -7,10 +7,6 @@ require __DIR__ . '/../app/auth.php';
 
 $cfg = base_config();
 
-if (is_logged_in()) {
-    redirect('/');
-}
-
 $requiredRole = (string)($_GET['role'] ?? $_POST['role'] ?? '');
 $returnTo = (string)($_GET['return_to'] ?? $_POST['return_to'] ?? '');
 $insufficientRole = (bool)($_GET['insufficient_role'] ?? $_POST['insufficient_role'] ?? false);
@@ -29,6 +25,17 @@ if ($returnTo !== '' && (str_contains($returnTo, '..') || str_starts_with($retur
 $error = null;
 if ($insufficientRole) {
     $error = "Your account does not have permission to access the " . ucfirst($requiredRole) . " area.";
+}
+
+$user = current_user();
+$mustLogoutToSwitch = false;
+if ($user && $requiredRole !== '' && !has_role($requiredRole)) {
+    $mustLogoutToSwitch = true;
+    $error = "You're currently logged in as " . ucfirst((string)($user['role'] ?? '')) . ". Please logout to switch to " . ucfirst($requiredRole) . ".";
+}
+
+if ($user && !$mustLogoutToSwitch) {
+    redirect('/');
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -67,6 +74,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <link href="<?= e(asset('public/assets/css/styles.css')) ?>" rel="stylesheet">
 </head>
 <body class="bg-light">
+  <?php if ($error): ?>
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1080;">
+      <div class="toast align-items-center text-bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="3200">
+        <div class="d-flex">
+          <div class="toast-body text-center"><?= e($error) ?></div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+      </div>
+    </div>
+  <?php endif; ?>
   <div class="container d-flex flex-column justify-content-center align-items-center" style="min-height: 100vh; padding: 2rem 0;">
     <div class="text-center mb-4">
       <img src="<?= e(asset('public/assets/sdo-logo.png')) ?>" alt="Logo" style="width: 100px; height: 100px; margin-bottom: 1.5rem; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));">
@@ -81,45 +98,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <p class="small text-muted">Please enter your credentials to continue</p>
         </div>
 
-        <?php if ($error): ?>
-          <div class="alert alert-danger border-0 small mb-4" style="border-radius: 12px;">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i><?= e($error) ?>
-          </div>
-        <?php endif; ?>
-
-        <form method="post" autocomplete="off">
-          <input type="hidden" name="role" value="<?= e($requiredRole) ?>">
-          <input type="hidden" name="return_to" value="<?= e($returnTo) ?>">
-          
-          <div class="mb-3">
-            <label class="form-label small fw-bold text-secondary">Username</label>
-            <div class="input-group custom-input-group">
-              <span class="input-group-text bg-light border-end-0">
-                <i class="bi bi-person text-muted"></i>
-              </span>
-              <input class="form-control bg-light border-start-0" name="username" value="<?= e((string)($_POST['username'] ?? '')) ?>" style="padding: 0.75rem;" placeholder="Enter your username" required autofocus>
-            </div>
-          </div>
-
-          <div class="mb-4">
-            <label class="form-label small fw-bold text-secondary">Password</label>
-            <div class="input-group custom-input-group">
-              <span class="input-group-text bg-light border-end-0">
-                <i class="bi bi-lock text-muted"></i>
-              </span>
-              <input class="form-control bg-light border-start-0" name="password" type="password" style="padding: 0.75rem;" placeholder="••••••••" required>
-            </div>
-          </div>
-
+        <?php if ($mustLogoutToSwitch): ?>
           <div class="d-grid gap-3">
-            <button class="btn btn-primary fw-bold" type="submit" style="border-radius: 12px; padding: 0.85rem; font-size: 1rem; transition: transform 0.2s;">
-              Sign In
-            </button>
+            <a class="btn btn-primary fw-bold" href="<?= url('/auth/logout.php') ?>" style="border-radius: 12px; padding: 0.85rem; font-size: 1rem;">
+              Logout
+            </a>
             <a href="<?= url('/') ?>" class="btn btn-link btn-sm text-secondary text-decoration-none">
               <i class="bi bi-arrow-left me-1"></i> Back to Home
             </a>
           </div>
-        </form>
+        <?php else: ?>
+          <form method="post" autocomplete="off">
+            <input type="hidden" name="role" value="<?= e($requiredRole) ?>">
+            <input type="hidden" name="return_to" value="<?= e($returnTo) ?>">
+            
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-secondary">Username</label>
+              <div class="input-group custom-input-group">
+                <span class="input-group-text bg-light border-end-0">
+                  <i class="bi bi-person text-muted"></i>
+                </span>
+                <input class="form-control bg-light border-start-0" name="username" value="<?= e((string)($_POST['username'] ?? '')) ?>" style="padding: 0.75rem;" placeholder="Enter your username" required autofocus>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <label class="form-label small fw-bold text-secondary">Password</label>
+              <div class="input-group custom-input-group">
+                <span class="input-group-text bg-light border-end-0">
+                  <i class="bi bi-lock text-muted"></i>
+                </span>
+                <input class="form-control bg-light border-start-0" name="password" type="password" style="padding: 0.75rem;" placeholder="••••••••" required>
+              </div>
+            </div>
+
+            <div class="d-grid gap-3">
+              <button class="btn btn-primary fw-bold" type="submit" style="border-radius: 12px; padding: 0.85rem; font-size: 1rem; transition: transform 0.2s;">
+                Sign In
+              </button>
+              <a href="<?= url('/') ?>" class="btn btn-link btn-sm text-secondary text-decoration-none">
+                <i class="bi bi-arrow-left me-1"></i> Back to Home
+              </a>
+            </div>
+          </form>
+        <?php endif; ?>
       </div>
     </div>
     
@@ -127,5 +149,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       &copy; <?= date('Y') ?> Deped SDO Cabuyao. All rights reserved.
     </div>
   </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    (function(){
+      if (!window.bootstrap) return;
+      var toasts = document.querySelectorAll('.toast');
+      toasts.forEach(function(el){
+        try { new bootstrap.Toast(el).show(); } catch (e) {}
+      });
+    })();
+  </script>
 </body>
 </html>

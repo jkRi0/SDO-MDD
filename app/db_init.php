@@ -45,6 +45,10 @@ function sync_database(PDO $pdo): void
         division VARCHAR(100) NOT NULL,
         district VARCHAR(100) NULL,
         hmo_provider VARCHAR(100) NULL,
+        medical_checked TINYINT(1) NOT NULL DEFAULT 0,
+        medical_checked_at DATETIME NULL,
+        dental_checked TINYINT(1) NOT NULL DEFAULT 0,
+        dental_checked_at DATETIME NULL,
         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (id),
         KEY idx_entry_date (entry_date),
@@ -56,6 +60,25 @@ function sync_database(PDO $pdo): void
         $pdo->exec("ALTER TABLE patients MODIFY COLUMN level ENUM('Elementary','Secondary','DepEd City Schools Division of Cabuyao') NOT NULL");
     } catch (Throwable $e) {
         // ignore migration failure (e.g., table missing during initial bootstrap)
+    }
+
+    // Add assessment columns if missing
+    try {
+        $patientColumns = $pdo->query("DESCRIBE patients")->fetchAll(PDO::FETCH_COLUMN);
+        if (!in_array('medical_checked', $patientColumns, true)) {
+            $pdo->exec("ALTER TABLE patients ADD COLUMN medical_checked TINYINT(1) NOT NULL DEFAULT 0 AFTER hmo_provider");
+        }
+        if (!in_array('medical_checked_at', $patientColumns, true)) {
+            $pdo->exec("ALTER TABLE patients ADD COLUMN medical_checked_at DATETIME NULL AFTER medical_checked");
+        }
+        if (!in_array('dental_checked', $patientColumns, true)) {
+            $pdo->exec("ALTER TABLE patients ADD COLUMN dental_checked TINYINT(1) NOT NULL DEFAULT 0 AFTER medical_checked_at");
+        }
+        if (!in_array('dental_checked_at', $patientColumns, true)) {
+            $pdo->exec("ALTER TABLE patients ADD COLUMN dental_checked_at DATETIME NULL AFTER dental_checked");
+        }
+    } catch (Throwable $e) {
+        // ignore migration failure
     }
 
     // 3. Seed/Update Default Admin

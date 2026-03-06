@@ -47,17 +47,120 @@ $cfg = base_config();
   </header>
 
   <main class="container py-4 py-md-5">
+    <div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+      <!-- <div>
+        <div class="h4 mb-0">Submitted Patients</div>
+        <div class="text-secondary small">Updates automatically</div>
+      </div> -->
+      <div class="text-secondary small" id="lastUpdated">&nbsp;</div>
+    </div>
+
     <div class="card shadow-sm border-0" style="border-radius: 16px; overflow: hidden;">
-      <div class="card-body p-4">
-        <div class="alert alert-info border-0 shadow-sm mb-4" style="border-radius: 12px;">
-          <i class="bi bi-info-circle me-2"></i>
-          Dashboard is temporary. Next: medical encounter records, search, and reports.
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 80px;">ID</th>
+                <th>Patient</th>
+                <th style="width: 140px;">Entry Date</th>
+                <th>School</th>
+                <th style="width: 160px;">Medical</th>
+                <th style="width: 160px;">Dental</th>
+                <th style="width: 200px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="patientsBody">
+              <tr>
+                <td colspan="7" class="text-center text-secondary py-4">Loading...</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-        <a class="btn btn-outline-primary px-4" href="<?= e(url('/')) ?>" style="border-radius: 10px;">
-          <i class="bi bi-arrow-left me-2"></i>Back to Home
-        </a>
       </div>
     </div>
+
+    <script src="<?= e(asset('public/assets/js/polling-config.js')) ?>"></script>
+    <script>
+      (function(){
+        var body = document.getElementById('patientsBody');
+        var lastUpdated = document.getElementById('lastUpdated');
+        if (!body) return;
+
+        var intervalMs = (window.SDO_MDD_POLLING && window.SDO_MDD_POLLING.intervalMs) ? window.SDO_MDD_POLLING.intervalMs : 3000;
+
+        function esc(s){
+          return String(s ?? '').replace(/[&<>"']/g, function(c){
+            return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'})[c];
+          });
+        }
+
+        function badge(checked){
+          return checked ? '<span class="badge text-bg-success">Checked</span>' : '<span class="badge text-bg-secondary">Pending</span>';
+        }
+
+        function render(rows){
+          if (!Array.isArray(rows) || rows.length === 0) {
+            body.innerHTML = '<tr><td colspan="7" class="text-center text-secondary py-4">No submissions yet.</td></tr>';
+            return;
+          }
+
+          body.innerHTML = rows.map(function(r){
+            var id = Number(r.id || 0);
+            var patient = esc(r.fullname);
+            var school = esc(r.school);
+            var level = esc(r.level);
+            var entryDate = esc(r.entry_date);
+            var med = badge(Number(r.medical_checked) === 1);
+            var dent = badge(Number(r.dental_checked) === 1);
+
+            return (
+              '<tr>' +
+                '<td class="text-secondary">' + id + '</td>' +
+                '<td><div class="fw-semibold">' + patient + '</div><div class="small text-secondary">' + level + '</div></td>' +
+                '<td>' + entryDate + '</td>' +
+                '<td>' + school + '</td>' +
+                '<td>' + med + '</td>' +
+                '<td>' + dent + '</td>' +
+                '<td>' +
+                  '<div class="d-flex flex-wrap gap-2">' +
+                    '<a class="btn btn-sm btn-primary" href="assess.php?id=' + id + '">Assess</a>' +
+                    '<form method="post" action="remove.php" onsubmit="return confirm(\'Remove this patient entry?\');">' +
+                      '<input type="hidden" name="id" value="' + id + '">' +
+                      '<button class="btn btn-sm btn-outline-danger" type="submit">Remove</button>' +
+                    '</form>' +
+                  '</div>' +
+                '</td>' +
+              '</tr>'
+            );
+          }).join('');
+        }
+
+        var inFlight = false;
+        async function poll(){
+          if (inFlight) return;
+          inFlight = true;
+          try {
+            var res = await fetch('<?= e(url('/api/patients.php')) ?>', { headers: { 'Accept': 'application/json' } });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            var json = await res.json();
+            if (json && json.ok) {
+              render(json.data);
+              if (lastUpdated) {
+                var now = new Date();
+                lastUpdated.textContent = 'Last updated: ' + now.toLocaleTimeString();
+              }
+            }
+          } catch (e) {
+          } finally {
+            inFlight = false;
+          }
+        }
+
+        poll();
+        setInterval(poll, intervalMs);
+      })();
+    </script>
   </main>
 </body>
 </html>
