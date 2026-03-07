@@ -136,7 +136,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <span class="input-group-text bg-light border-end-0">
                   <i class="bi bi-lock text-muted"></i>
                 </span>
-                <input class="form-control bg-light border-start-0" name="password" type="password" style="padding: 0.75rem;" placeholder="••••••••" required>
+                <input class="form-control bg-light border-start-0" id="passwordInput" name="password" type="password" style="padding: 0.75rem;" placeholder="Enter your password" required>
+                <button class="btn bg-light border-start-0" type="button" id="togglePassword" aria-label="Show password">
+                  <i class="bi bi-eye text-muted" aria-hidden="true"></i>
+                </button>
               </div>
             </div>
 
@@ -165,6 +168,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       var toasts = document.querySelectorAll('.toast');
       toasts.forEach(function(el){
         try { new bootstrap.Toast(el).show(); } catch (e) {}
+      });
+    })();
+  </script>
+
+  <script>
+    (function(){
+      var input = document.getElementById('passwordInput');
+      var btn = document.getElementById('togglePassword');
+      if (!input || !btn) return;
+
+      btn.addEventListener('click', function(){
+        var show = input.type === 'password';
+        input.type = show ? 'text' : 'password';
+        btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+        var icon = btn.querySelector('i');
+        if (icon) {
+          icon.classList.remove(show ? 'bi-eye' : 'bi-eye-slash');
+          icon.classList.add(show ? 'bi-eye-slash' : 'bi-eye');
+        }
       });
     })();
   </script>

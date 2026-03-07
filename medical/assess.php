@@ -54,6 +54,68 @@ $defaults = [
     'license_no' => '',
 ];
 
+try {
+    $stmt = db()->prepare(
+        'SELECT
+            assessed_by_name, license_no,
+            height_cm, weight_kg, temperature_c, pulse_rate, rr, o2_sat, bp_systolic, bp_diastolic,
+            past_medical_history,
+            ob_lmp, ob_gtpal, ob_chest_xray, ob_ecg,
+            physical_findings, stress_level, coping_level
+         FROM medical_assessments
+         WHERE patient_id = ?
+         ORDER BY id DESC
+         LIMIT 1'
+    );
+    $stmt->execute([$id]);
+    $last = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($last) {
+        $defaults['assessed_by_name'] = (string)($last['assessed_by_name'] ?? $defaults['assessed_by_name']);
+        $defaults['license_no'] = (string)($last['license_no'] ?? $defaults['license_no']);
+
+        $defaults['height_cm'] = $last['height_cm'] === null ? '' : (string)$last['height_cm'];
+        $defaults['weight_kg'] = $last['weight_kg'] === null ? '' : (string)$last['weight_kg'];
+        $defaults['temperature_c'] = $last['temperature_c'] === null ? '' : (string)$last['temperature_c'];
+        $defaults['pulse_rate'] = $last['pulse_rate'] === null ? '' : (string)$last['pulse_rate'];
+        $defaults['rr'] = $last['rr'] === null ? '' : (string)$last['rr'];
+        $defaults['o2_sat'] = $last['o2_sat'] === null ? '' : (string)$last['o2_sat'];
+        $defaults['bp_systolic'] = $last['bp_systolic'] === null ? '' : (string)$last['bp_systolic'];
+        $defaults['bp_diastolic'] = $last['bp_diastolic'] === null ? '' : (string)$last['bp_diastolic'];
+
+        $defaults['ob_lmp'] = (string)($last['ob_lmp'] ?? '');
+        $defaults['ob_gtpal'] = (string)($last['ob_gtpal'] ?? '');
+        $defaults['ob_chest_xray'] = (string)($last['ob_chest_xray'] ?? '');
+        $defaults['ob_ecg'] = (string)($last['ob_ecg'] ?? '');
+        $defaults['physical_findings'] = (string)($last['physical_findings'] ?? '');
+        $defaults['stress_level'] = $last['stress_level'] === null ? '' : (string)$last['stress_level'];
+        $defaults['coping_level'] = $last['coping_level'] === null ? '' : (string)$last['coping_level'];
+
+        $pmh = [];
+        $pmhCancer = '';
+        $pmhOp = '';
+        $pmhCon = '';
+        $pmhOthers = '';
+        $rawPmh = (string)($last['past_medical_history'] ?? '');
+        if ($rawPmh !== '') {
+            $decoded = json_decode($rawPmh, true);
+            if (is_array($decoded)) {
+                $pmh = isset($decoded['checked']) && is_array($decoded['checked']) ? $decoded['checked'] : [];
+                $pmhCancer = is_string($decoded['cancer_type'] ?? null) ? $decoded['cancer_type'] : '';
+                $pmhOp = is_string($decoded['operation'] ?? null) ? $decoded['operation'] : '';
+                $pmhCon = is_string($decoded['confinement'] ?? null) ? $decoded['confinement'] : '';
+                $pmhOthers = is_string($decoded['others'] ?? null) ? $decoded['others'] : '';
+            }
+        }
+
+        $defaults['pmh'] = array_values(array_filter($pmh, fn($v) => is_string($v) && $v !== ''));
+        $defaults['pmh_cancer_type'] = $pmhCancer;
+        $defaults['pmh_operation'] = $pmhOp;
+        $defaults['pmh_confinement'] = $pmhCon;
+        $defaults['pmh_others'] = $pmhOthers;
+    }
+} catch (Throwable $e) {
+}
+
 $pmhOptions = [
     'DM' => 'DM',
     'HPN' => 'HPN',
@@ -543,7 +605,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
               <div class="col-12 col-md-4">
                 <label class="form-label">Contact Number</label>
-                <input class="form-control" name="contact_number" value="<?= e((string)($patient['contact_number'] ?? '')) ?>" type="tel" inputmode="tel" pattern="[0-9+()\-\s]{0,30}" maxlength="30" oninput="this.value=this.value.replace(/[^0-9+()\-\s]/g,'');">
+                <input class="form-control" name="contact_number" value="<?= e((string)($patient['contact_number'] ?? '')) ?>" type="tel" inputmode="tel" maxlength="30" oninput="this.value=this.value.replace(/[^0-9+()\-\s]/g,'');">
               </div>
 
               <div class="col-12 col-md-4">

@@ -453,11 +453,11 @@ $schoolsForLevel = match ($postedLevel) {
               <label class="form-label">Sex</label>
               <div class="d-flex align-items-center gap-3" style="min-height: 38px;">
                 <div class="form-check">
-                  <input class="form-check-input" type="radio" name="sex" id="sexM" value="M" <?= ((string)($_POST['sex'] ?? '') === 'M') ? 'checked' : '' ?> required>
+                  <input class="form-check-input" type="radio" name="sex" id="sexM" value="Male" <?= ((string)($_POST['sex'] ?? '') === 'Male') ? 'checked' : '' ?> required>
                   <label class="form-check-label" for="sexM">M</label>
                 </div>
                 <div class="form-check">
-                  <input class="form-check-input" type="radio" name="sex" id="sexF" value="F" <?= ((string)($_POST['sex'] ?? '') === 'F') ? 'checked' : '' ?>>
+                  <input class="form-check-input" type="radio" name="sex" id="sexF" value="Female" <?= ((string)($_POST['sex'] ?? '') === 'Female') ? 'checked' : '' ?>>
                   <label class="form-check-label" for="sexF">F</label>
                 </div>
                 <div class="form-check">
@@ -474,7 +474,7 @@ $schoolsForLevel = match ($postedLevel) {
 
             <div class="col-12 col-md-4">
               <label class="form-label">Contact Number</label>
-              <input class="form-control" name="contact_number" value="<?= e((string)($_POST['contact_number'] ?? '')) ?>" type="tel" inputmode="tel" pattern="[0-9+()\-\s]{0,30}" maxlength="30" oninput="this.value=this.value.replace(/[^0-9+()\-\s]/g,'');">
+              <input class="form-control" name="contact_number" value="<?= e((string)($_POST['contact_number'] ?? '')) ?>" type="tel" inputmode="tel" maxlength="30" oninput="this.value=this.value.replace(/[^0-9+()\-\s]/g,'');">
             </div>
 
             <div class="col-12 col-md-4">
