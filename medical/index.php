@@ -153,7 +153,8 @@ $flashError = get_flash('error');
             var school = esc(r.school);
             var level = esc(r.level);
             var entryDate = esc(r.entry_date);
-            var med = badge(Number(r.medical_checked) === 1);
+            var medChecked = Number(r.medical_checked) === 1;
+            var med = badge(medChecked);
             var dent = badge(Number(r.dental_checked) === 1);
 
             return (
@@ -166,7 +167,7 @@ $flashError = get_flash('error');
                 '<td>' + dent + '</td>' +
                 '<td>' +
                   '<div class="d-flex flex-wrap gap-2">' +
-                    '<a class="btn btn-sm btn-primary" href="assess.php?id=' + id + '">Assess</a>' +
+                    '<a class="btn btn-sm btn-primary" href="assess.php?id=' + id + '">' + (medChecked ? 'View' : 'Assess') + '</a>' +
                     '<form method="post" action="remove.php" onsubmit="return confirm(\'Remove this patient entry?\');">' +
                       '<input type="hidden" name="id" value="' + id + '">' +
                       '<button class="btn btn-sm btn-outline-danger" type="submit">Remove</button>' +
