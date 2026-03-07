@@ -123,7 +123,61 @@ function sync_database(PDO $pdo): void
         KEY idx_created_at (created_at)
     ) ENGINE=InnoDB");
 
-    // 4. Seed/Update Default Admin
+    // 4. Create Dental Assessments Table
+    $pdo->exec("CREATE TABLE IF NOT EXISTS dental_assessments (
+        id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+        patient_id INT UNSIGNED NOT NULL,
+        assessed_by_name VARCHAR(255) NOT NULL,
+        license_no VARCHAR(100) NOT NULL,
+
+        mh_allergy TINYINT(1) NOT NULL DEFAULT 0,
+        mh_asthma TINYINT(1) NOT NULL DEFAULT 0,
+        mh_bleeding_problem TINYINT(1) NOT NULL DEFAULT 0,
+        mh_heart_ailment TINYINT(1) NOT NULL DEFAULT 0,
+        mh_diabetes TINYINT(1) NOT NULL DEFAULT 0,
+        mh_epilepsy TINYINT(1) NOT NULL DEFAULT 0,
+        mh_kidney_disease TINYINT(1) NOT NULL DEFAULT 0,
+        mh_convulsion TINYINT(1) NOT NULL DEFAULT 0,
+        mh_fainting TINYINT(1) NOT NULL DEFAULT 0,
+        mh_others TEXT NULL,
+
+        exam_date DATE NULL,
+        age_last_birthday INT UNSIGNED NULL,
+        debris TINYINT(1) NOT NULL DEFAULT 0,
+        gingiva_inflammation TINYINT(1) NOT NULL DEFAULT 0,
+        calculus TINYINT(1) NOT NULL DEFAULT 0,
+        orthodontic_treatment TINYINT(1) NOT NULL DEFAULT 0,
+        occlusion ENUM('Class 1','Class 2','Class 3') NULL,
+        tmj_exam ENUM('Pain','Popping','Deviation','Tooth wear') NULL,
+
+        tooth_chart_json MEDIUMTEXT NULL,
+        teeth_present_count INT UNSIGNED NULL,
+        d_count INT UNSIGNED NULL,
+        m_count INT UNSIGNED NULL,
+        f_count INT UNSIGNED NULL,
+        dmft_total INT UNSIGNED NULL,
+
+        soft_tissue_exam ENUM('Lips','Floor of mouth','Palate','Tongue','Neck & nodes') NULL,
+
+        perio_gingival_inflammation ENUM('Slight','Moderate','Severe') NULL,
+        perio_soft_plaque ENUM('Slight','Moderate','Heavy') NULL,
+        perio_hard_calc ENUM('Light','Moderate','Heavy') NULL,
+        perio_stains ENUM('Light','Moderate','Heavy') NULL,
+        home_care_effectiveness ENUM('Good','Fair','Poor') NULL,
+        periodontal_condition ENUM('Good','Fair','Poor') NULL,
+        periodontal_diagnosis ENUM('Normal','Gingivitis') NULL,
+        periodontitis ENUM('Early','Moderate','Advanced') NULL,
+
+        recommendations_json TEXT NULL,
+        recommendation_others TEXT NULL,
+
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        KEY idx_patient_id (patient_id),
+        KEY idx_created_at (created_at)
+    ) ENGINE=InnoDB");
+
+    // 5. Seed/Update Default Admin
     $stmt = $pdo->prepare("SELECT id, role FROM users WHERE username = 'admin' LIMIT 1");
     $stmt->execute();
     $admin = $stmt->fetch();
