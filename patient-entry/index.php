@@ -180,75 +180,77 @@ $designationOptions = [
 $errors = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $level = (string)($_POST['level'] ?? 'Elementary');
-    $school = trim((string)($_POST['school'] ?? ''));
-    $entryDate = (string)($_POST['entry_date'] ?? $defaults['entry_date']);
-    $fullname = trim((string)($_POST['fullname'] ?? ''));
-    $age = trim((string)($_POST['age'] ?? ''));
-    $sexInput = (string)($_POST['sex'] ?? '');
-    $address = trim((string)($_POST['address'] ?? ''));
-    $dob = (string)($_POST['date_of_birth'] ?? '');
-    $civilStatus = trim((string)($_POST['civil_status'] ?? ''));
-    $designation = trim((string)($_POST['designation'] ?? ''));
-    $region = trim((string)($_POST['region'] ?? $defaults['region']));
-    $division = trim((string)($_POST['division'] ?? $defaults['division']));
-    $district = trim((string)($_POST['district'] ?? ''));
-    $hmo = trim((string)($_POST['hmo_provider'] ?? ''));
-
-    $sex = match ($sexInput) {
-        'M' => 'Male',
-        'F' => 'Female',
-        'Others' => 'Others',
-        '' => '',
-        default => '__invalid__',
-    };
+    $data = [
+        'school' => trim((string)($_POST['school'] ?? '')),
+        'level' => trim((string)($_POST['level'] ?? '')),
+        'entry_date' => (string)($_POST['entry_date'] ?? ''),
+        'fullname' => trim((string)($_POST['fullname'] ?? '')),
+        'age' => trim((string)($_POST['age'] ?? '')),
+        'sex' => (string)($_POST['sex'] ?? ''),
+        'address' => trim((string)($_POST['address'] ?? '')),
+        'contact_number' => trim((string)($_POST['contact_number'] ?? '')),
+        'date_of_birth' => (string)($_POST['date_of_birth'] ?? ''),
+        'civil_status' => trim((string)($_POST['civil_status'] ?? '')),
+        'designation' => trim((string)($_POST['designation'] ?? '')),
+        'region' => trim((string)($_POST['region'] ?? '')),
+        'division' => trim((string)($_POST['division'] ?? '')),
+        'district' => trim((string)($_POST['district'] ?? '')),
+        'hmo_provider' => trim((string)($_POST['hmo_provider'] ?? '')),
+    ];
 
     $divisionLevel = 'DepEd City Schools Division of Cabuyao';
     $validLevels = ['Elementary', 'Secondary', $divisionLevel];
-    if (!in_array($level, $validLevels, true)) {
+    if (!in_array($data['level'], $validLevels, true)) {
         $errors[] = 'Invalid level.';
     }
 
-    if ($level !== $divisionLevel) {
-        $validSchoolList = $level === 'Secondary' ? $secondarySchools : $elementarySchools;
-        if ($school === '' || !in_array($school, $validSchoolList, true)) {
+    if ($data['level'] !== $divisionLevel) {
+        $validSchoolList = $data['level'] === 'Secondary' ? $secondarySchools : $elementarySchools;
+        if ($data['school'] === '' || !in_array($data['school'], $validSchoolList, true)) {
             $errors[] = 'Please select a valid school.';
         }
     } else {
         // Not applicable: School is optional for division-level entry
-        $school = 'N/A';
+        $data['school'] = 'N/A';
     }
 
-    if ($fullname === '') {
+    if ($data['fullname'] === '') {
         $errors[] = 'Fullname is required.';
     }
 
-    if ($age === '') {
+    if ($data['age'] === '') {
         $errors[] = 'Age is required.';
     }
 
-    if ($entryDate === '') {
+    if ($data['entry_date'] === '') {
         $errors[] = 'Date is required.';
     }
 
-    if ($age !== '' && (!ctype_digit($age) || (int)$age > 150)) {
+    if ($data['age'] !== '' && (!ctype_digit($data['age']) || (int)$data['age'] > 150)) {
         $errors[] = 'Age must be a valid number.';
     }
 
-    if ($sex === '') {
+    if ($data['sex'] === '') {
         $errors[] = 'Sex is required.';
     }
 
     $validSex = ['', 'Male', 'Female', 'Others'];
-    if (!in_array($sex, $validSex, true)) {
+    if (!in_array($data['sex'], $validSex, true)) {
         $errors[] = 'Invalid sex.';
     }
 
-    if ($address === '') {
+    if ($data['address'] === '') {
         $errors[] = 'Address is required.';
     }
 
-    if ($dob === '') {
+    if ($data['contact_number'] !== '' && strlen($data['contact_number']) > 30) {
+        $errors[] = 'Contact number is too long.';
+    }
+    if ($data['contact_number'] !== '' && !preg_match('/^[0-9+()\-\s]*$/', $data['contact_number'])) {
+        $errors[] = 'Contact number must not contain letters.';
+    }
+
+    if ($data['date_of_birth'] === '') {
         $errors[] = 'Date of Birth is required.';
     }
 
@@ -262,39 +264,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'Registered Partnership/Civil Union',
         'Common-Law/Cohabitating',
     ];
-    if ($civilStatus === '') {
+    if ($data['civil_status'] === '') {
         $errors[] = 'Civil status is required.';
     }
-    if (!in_array($civilStatus, $validCivilStatus, true)) {
+    if (!in_array($data['civil_status'], $validCivilStatus, true)) {
         $errors[] = 'Invalid civil status.';
     }
 
-    if ($designation !== '' && !in_array($designation, $designationOptions, true)) {
+    if ($data['designation'] !== '' && !in_array($data['designation'], $designationOptions, true)) {
         $errors[] = 'Invalid designation.';
     }
 
     if (!$errors) {
         try {
             $stmt = db()->prepare(
-                'INSERT INTO patients (school, level, entry_date, fullname, age, sex, address, date_of_birth, civil_status, designation, region, division, district, hmo_provider)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                'INSERT INTO patients (school, level, entry_date, fullname, age, sex, address, contact_number, date_of_birth, civil_status, designation, region, division, district, hmo_provider)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
             );
 
             $stmt->execute([
-                $school,
-                $level,
-                $entryDate,
-                $fullname,
-                $age === '' ? null : (int)$age,
-                $sex === '' ? null : $sex,
-                $address === '' ? null : $address,
-                $dob === '' ? null : $dob,
-                $civilStatus === '' ? null : $civilStatus,
-                $designation === '' ? null : $designation,
-                $region === '' ? $defaults['region'] : $region,
-                $division === '' ? $defaults['division'] : $division,
-                $district === '' ? null : $district,
-                $hmo === '' ? null : $hmo,
+                $data['school'],
+                $data['level'],
+                $data['entry_date'],
+                $data['fullname'],
+                (int)$data['age'],
+                $data['sex'],
+                $data['address'],
+                $data['contact_number'] === '' ? null : $data['contact_number'],
+                $data['date_of_birth'],
+                $data['civil_status'],
+                $data['designation'] === '' ? null : $data['designation'],
+                $data['region'],
+                $data['division'],
+                $data['district'] === '' ? null : $data['district'],
+                $data['hmo_provider'] === '' ? null : $data['hmo_provider'],
             ]);
 
             set_flash('success', 'Patient record saved.');
@@ -470,6 +473,11 @@ $schoolsForLevel = match ($postedLevel) {
             </div>
 
             <div class="col-12 col-md-4">
+              <label class="form-label">Contact Number</label>
+              <input class="form-control" name="contact_number" value="<?= e((string)($_POST['contact_number'] ?? '')) ?>" type="tel" inputmode="tel" pattern="[0-9+()\-\s]{0,30}" maxlength="30" oninput="this.value=this.value.replace(/[^0-9+()\-\s]/g,'');">
+            </div>
+
+            <div class="col-12 col-md-4">
               <label class="form-label">Date of Birth</label>
               <input class="form-control" type="date" name="date_of_birth" value="<?= e((string)($_POST['date_of_birth'] ?? '')) ?>" required>
             </div>
@@ -488,12 +496,7 @@ $schoolsForLevel = match ($postedLevel) {
               </select>
             </div>
 
-            <div class="col-12 col-md-4">
-              <label class="form-label">Region</label>
-              <input class="form-control" name="region" value="<?= e((string)($_POST['region'] ?? $defaults['region'])) ?>">
-            </div>
-
-            <div class="col-12 col-md-8">
+            <div class="col-12 col-md-12">
               <label class="form-label">Designation</label>
               <div class="ac-wrap">
                 <input class="form-control" id="designationInput" name="designation" value="<?= e((string)($_POST['designation'] ?? '')) ?>" placeholder="Type to search..." autocomplete="off">
@@ -502,17 +505,22 @@ $schoolsForLevel = match ($postedLevel) {
             </div>
 
             <div class="col-12 col-md-4">
+              <label class="form-label">Region</label>
+              <input class="form-control" name="region" value="<?= e((string)($_POST['region'] ?? $defaults['region'])) ?>">
+            </div>
+
+            <div class="col-12 col-md-4">
               <label class="form-label">Division</label>
               <input class="form-control" name="division" value="<?= e((string)($_POST['division'] ?? $defaults['division'])) ?>">
             </div>
 
-            <div class="col-12 col-md-6">
+            <div class="col-12 col-md-4">
               <label class="form-label">District</label>
               <input class="form-control" name="district" value="<?= e((string)($_POST['district'] ?? '')) ?>">
             </div>
 
-            <div class="col-12 col-md-6">
-              <label class="form-label">HMO Provider (optional)</label>
+            <div class="col-12">
+              <label class="form-label">HMO Provider</label>
               <input class="form-control" name="hmo_provider" value="<?= e((string)($_POST['hmo_provider'] ?? '')) ?>">
             </div>
 

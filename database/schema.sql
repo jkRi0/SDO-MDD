@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS patients (
   age INT UNSIGNED NULL,
   sex ENUM('Male','Female','Others') NULL,
   address VARCHAR(255) NULL,
+  contact_number VARCHAR(30) NULL,
   date_of_birth DATE NULL,
   civil_status VARCHAR(50) NULL,
   region VARCHAR(100) NOT NULL,

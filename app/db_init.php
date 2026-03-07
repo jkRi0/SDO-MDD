@@ -39,6 +39,7 @@ function sync_database(PDO $pdo): void
         age INT UNSIGNED NULL,
         sex ENUM('Male','Female','Others') NULL,
         address VARCHAR(255) NULL,
+        contact_number VARCHAR(30) NULL,
         date_of_birth DATE NULL,
         civil_status VARCHAR(50) NULL,
         designation VARCHAR(255) NULL,
@@ -74,6 +75,9 @@ function sync_database(PDO $pdo): void
             } catch (Throwable $e) {
                 // ignore migration failure
             }
+        }
+        if (!in_array('contact_number', $patientColumns, true)) {
+            $pdo->exec("ALTER TABLE patients ADD COLUMN contact_number VARCHAR(30) NULL AFTER address");
         }
         if (!in_array('medical_checked', $patientColumns, true)) {
             $pdo->exec("ALTER TABLE patients ADD COLUMN medical_checked TINYINT(1) NOT NULL DEFAULT 0 AFTER hmo_provider");

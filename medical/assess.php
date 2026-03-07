@@ -17,7 +17,7 @@ if ($id <= 0) {
 }
 
 try {
-    $stmt = db()->prepare('SELECT id, school, level, entry_date, fullname, age, sex, address, date_of_birth, civil_status, designation, region, division, district, hmo_provider FROM patients WHERE id = ? LIMIT 1');
+    $stmt = db()->prepare('SELECT id, school, level, entry_date, fullname, age, sex, address, contact_number, date_of_birth, civil_status, designation, region, division, district, hmo_provider FROM patients WHERE id = ? LIMIT 1');
     $stmt->execute([$id]);
     $patient = $stmt->fetch(PDO::FETCH_ASSOC);
 } catch (Throwable $e) {
@@ -30,6 +30,7 @@ if (!$patient) {
 
 $defaults = [
     'height_cm' => '',
+    'height_unit' => 'cm',
     'weight_kg' => '',
     'temperature_c' => '',
     'pulse_rate' => '',
@@ -221,6 +222,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'age' => trim((string)($_POST['age'] ?? '')),
         'sex' => (string)($_POST['sex'] ?? ''),
         'address' => trim((string)($_POST['address'] ?? '')),
+        'contact_number' => trim((string)($_POST['contact_number'] ?? '')),
         'date_of_birth' => (string)($_POST['date_of_birth'] ?? ''),
         'civil_status' => trim((string)($_POST['civil_status'] ?? '')),
         'designation' => trim((string)($_POST['designation'] ?? '')),
@@ -232,6 +234,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $a = [
         'height_cm' => trim((string)($_POST['height_cm'] ?? '')),
+        'height_unit' => trim((string)($_POST['height_unit'] ?? 'cm')),
         'weight_kg' => trim((string)($_POST['weight_kg'] ?? '')),
         'temperature_c' => trim((string)($_POST['temperature_c'] ?? '')),
         'pulse_rate' => trim((string)($_POST['pulse_rate'] ?? '')),
@@ -259,6 +262,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($p['age'] === '') $errors[] = 'Age is required.';
     if ($p['sex'] === '') $errors[] = 'Sex is required.';
     if ($p['address'] === '') $errors[] = 'Address is required.';
+    if ($p['contact_number'] !== '' && strlen($p['contact_number']) > 30) {
+        $errors[] = 'Contact number is too long.';
+    }
+    if ($p['contact_number'] !== '' && !preg_match('/^[0-9+()\-\s]*$/', $p['contact_number'])) {
+        $errors[] = 'Contact number must not contain letters.';
+    }
     if ($p['date_of_birth'] === '') $errors[] = 'Date of Birth is required.';
     if ($p['civil_status'] === '') $errors[] = 'Civil status is required.';
 
@@ -286,6 +295,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($p['designation'] !== '' && !in_array($p['designation'], $designationOptions, true)) {
         $errors[] = 'Invalid designation.';
+    }
+
+    $validHeightUnits = ['cm', 'm', 'ft'];
+    if ($a['height_unit'] === '') $a['height_unit'] = 'cm';
+    if (!in_array($a['height_unit'], $validHeightUnits, true)) {
+        $errors[] = 'Invalid height unit.';
+    }
+
+    if ($a['height_cm'] !== '' && is_numeric($a['height_cm']) && in_array($a['height_unit'], $validHeightUnits, true)) {
+        $raw = (float)$a['height_cm'];
+        $cm = $raw;
+        if ($a['height_unit'] === 'm') $cm = $raw * 100;
+        if ($a['height_unit'] === 'ft') $cm = $raw * 30.48;
+        $a['height_cm'] = rtrim(rtrim(number_format($cm, 2, '.', ''), '0'), '.');
     }
 
     $numericFields = [
@@ -345,7 +368,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $stmt = db()->prepare(
                 'UPDATE patients
-                 SET school = ?, level = ?, entry_date = ?, fullname = ?, age = ?, sex = ?, address = ?, date_of_birth = ?, civil_status = ?, designation = ?, region = ?, division = ?, district = ?, hmo_provider = ?
+                 SET school = ?, level = ?, entry_date = ?, fullname = ?, age = ?, sex = ?, address = ?, contact_number = ?, date_of_birth = ?, civil_status = ?, designation = ?, region = ?, division = ?, district = ?, hmo_provider = ?
                  WHERE id = ?'
             );
             $stmt->execute([
@@ -356,6 +379,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 (int)$p['age'],
                 $p['sex'],
                 $p['address'],
+                $p['contact_number'] === '' ? null : $p['contact_number'],
                 $p['date_of_birth'],
                 $p['civil_status'],
                 $p['designation'] === '' ? null : $p['designation'],
@@ -518,6 +542,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               </div>
 
               <div class="col-12 col-md-4">
+                <label class="form-label">Contact Number</label>
+                <input class="form-control" name="contact_number" value="<?= e((string)($patient['contact_number'] ?? '')) ?>" type="tel" inputmode="tel" pattern="[0-9+()\-\s]{0,30}" maxlength="30" oninput="this.value=this.value.replace(/[^0-9+()\-\s]/g,'');">
+              </div>
+
+              <div class="col-12 col-md-4">
                 <label class="form-label">Date of Birth</label>
                 <input class="form-control" type="date" name="date_of_birth" value="<?= e((string)$patient['date_of_birth']) ?>" required>
               </div>
@@ -535,17 +564,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </select>
               </div>
 
-              <div class="col-12 col-md-4">
-                <label class="form-label">Region</label>
-                <input class="form-control" name="region" value="<?= e((string)$patient['region']) ?>" required>
-              </div>
-
-              <div class="col-12 col-md-8">
+              <div class="col-12 col-md-12">
                 <label class="form-label">Designation</label>
                 <div class="ac-wrap">
                   <input class="form-control" id="designationInput" name="designation" value="<?= e((string)($patient['designation'] ?? '')) ?>" placeholder="Type to search..." autocomplete="off">
                   <div class="ac-menu" id="designationMenu" role="listbox" aria-label="Designation options"></div>
                 </div>
+              </div>
+
+              <div class="col-12 col-md-4">
+                <label class="form-label">Region</label>
+                <input class="form-control" name="region" value="<?= e((string)$patient['region']) ?>" required>
               </div>
               <div class="col-12 col-md-4">
                 <label class="form-label">Division</label>
@@ -555,7 +584,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <label class="form-label">District</label>
                 <input class="form-control" name="district" value="<?= e((string)$patient['district']) ?>">
               </div>
-              <div class="col-12 col-md-6">
+
+              <div class="col-12">
                 <label class="form-label">HMO Provider</label>
                 <input class="form-control" name="hmo_provider" value="<?= e((string)$patient['hmo_provider']) ?>">
               </div>
@@ -569,7 +599,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="row g-3">
               <div class="col-12 col-md-3">
                 <label class="form-label">Height</label>
-                <input class="form-control" type="number" step="0.01" min="0" max="300" name="height_cm" value="<?= e((string)($defaults['height_cm'] ?? '')) ?>" placeholder="cm">
+                <div class="input-group">
+                  <input class="form-control" type="number" step="0.01" min="0" max="1000" name="height_cm" value="<?= e((string)($defaults['height_cm'] ?? '')) ?>" placeholder="Height">
+                  <select class="form-select" name="height_unit" style="max-width: 92px;">
+                    <option value="cm" <?= ((string)($defaults['height_unit'] ?? 'cm') === 'cm') ? 'selected' : '' ?>>cm</option>
+                    <option value="m" <?= ((string)($defaults['height_unit'] ?? 'cm') === 'm') ? 'selected' : '' ?>>m</option>
+                    <option value="ft" <?= ((string)($defaults['height_unit'] ?? 'cm') === 'ft') ? 'selected' : '' ?>>ft</option>
+                  </select>
+                </div>
               </div>
               <div class="col-12 col-md-3">
                 <label class="form-label">Weight</label>
