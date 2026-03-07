@@ -68,25 +68,37 @@ $hasLogo = is_file($logoFsPath);
   <main class="container page py-4 py-md-5">
 
     <?php if ($flashSuccess || $flashError): ?>
-      <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1080;">
+      <div class="toast-stack-top-center">
         <?php if ($flashSuccess): ?>
-          <div class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="2200">
+          <div class="toast toast-flash toast-flash--success" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="2200">
             <div class="d-flex">
               <div class="toast-body">
-                <?= e($flashSuccess) ?>
+                <div class="toast-flash__row">
+                  <i class="bi bi-check-circle-fill toast-flash__icon" aria-hidden="true"></i>
+                  <div class="toast-flash__text">
+                    <div class="toast-flash__title">Success:</div>
+                    <div class="toast-flash__message"><?= e($flashSuccess) ?></div>
+                  </div>
+                </div>
               </div>
-              <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+              <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
             </div>
           </div>
         <?php endif; ?>
 
         <?php if ($flashError): ?>
-          <div class="toast align-items-center text-bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="3000">
+          <div class="toast toast-flash toast-flash--error" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="3000">
             <div class="d-flex">
               <div class="toast-body">
-                <?= e($flashError) ?>
+                <div class="toast-flash__row">
+                  <i class="bi bi-slash-circle-fill toast-flash__icon" aria-hidden="true"></i>
+                  <div class="toast-flash__text">
+                    <div class="toast-flash__title">Error:</div>
+                    <div class="toast-flash__message"><?= e($flashError) ?></div>
+                  </div>
+                </div>
               </div>
-              <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+              <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
             </div>
           </div>
         <?php endif; ?>

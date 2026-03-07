@@ -50,6 +50,133 @@ $defaults = [
     'division' => 'Cabuyao City',
 ];
 
+$designationOptions = [
+    'School Principal I',
+    'School Principal II',
+    'School Principal III',
+    'School Principal IV',
+    'Teacher I (Elementary)',
+    'Teacher II (Elementary)',
+    'Teacher III (Elementary)',
+    'Teacher IV (Elementary)',
+    'Teacher V (Elementary)',
+    'Teacher VI (Elementary)',
+    'Teacher VII (Elementary)',
+    'Teacher I (Secondary)',
+    'Teacher II (Secondary)',
+    'Teacher III (Secondary)',
+    'Teacher IV (Secondary)',
+    'Teacher V (Secondary)',
+    'Teacher VI (Secondary)',
+    'Teacher VII (Secondary)',
+    'Master Teacher I (Elementary)',
+    'Master Teacher II (Elementary)',
+    'Master Teacher III (Elementary)',
+    'Master Teacher IV (Elementary)',
+    'Master Teacher V (Elementary)',
+    'Master Teacher I (Secondary)',
+    'Master Teacher II (Secondary)',
+    'Master Teacher III (Secondary)',
+    'Master Teacher IV (Secondary)',
+    'Master Teacher V (Secondary)',
+    'Teacher I (Senior High School Teacher I - Academic Track and Core Subjects)',
+    'Teacher II (Senior High School Teacher II - Academic and Core Subjects)',
+    'Teacher III (Senior High School Teacher III - Academic and Core Subjects)',
+    'Teacher IV (Senior High School Teacher IV - Academic and Core Subjects)',
+    'Teacher V (Senior High School Teacher V - Academic and Core Subjects)',
+    'Teacher VI (Senior High School Teacher VI - Academic and Core Subjects)',
+    'Teacher VII (Senior High School Teacher VII - Academic and Core Subjects)',
+    'Master Teacher I (Senior High School Master Teacher I - Academic Track and Core Subjects)',
+    'Master Teacher II (Senior High School Master Teacher II - Academic Track and Core Subjects)',
+    'Master Teacher III (Senior High School Master Teacher III - Academic and Core Subjects)',
+    'Master Teacher IV (Senior High School Master Teacher IV - Academic and Core Subjects)',
+    'Master Teacher V (Senior High School Master Teacher V - Academic Track and Core Subjects)',
+    'Teacher I (Senior High School Teacher I - Arts and Design Track)',
+    'Teacher II (Senior High School Teacher II - Arts and Design Track)',
+    'Teacher III (Senior High School Teacher III - Arts and Design Track)',
+    'Teacher IV (Senior High School Teacher IV - Arts and Design Track)',
+    'Teacher V (Senior High School Teacher V - Arts and Design Track)',
+    'Teacher VI (Senior High School Teacher VI - Arts and Design Track)',
+    'Teacher VII (Senior High School Teacher VII - Arts and Design Track)',
+    'Master Teacher I (Senior High School Master Teacher I - Arts and Design Track)',
+    'Master Teacher II (Senior High School Master Teacher II - Arts and Design Track)',
+    'Master Teacher III (Senior High School Master Teacher III - Arts and Design Track)',
+    'Master Teacher IV (Senior High School Master Teacher IV - Arts and Design Track)',
+    'Master Teacher V (Senior High School Master Teacher V - Arts and Design Track)',
+    'Teacher I (Senior High School Teacher I - Sports Track)',
+    'Teacher II (Senior High School Teacher II - Sports Track)',
+    'Teacher III (Senior High School Teacher III - Sports Track)',
+    'Teacher IV (Senior High School Teacher IV - Sports Track)',
+    'Teacher V (Senior High School Teacher V - Sports Track)',
+    'Teacher VI (Senior High School Teacher VI - Sports Track)',
+    'Teacher VII (Senior High School Teacher VII - Sports Track)',
+    'Master Teacher I (Senior High School Master Teacher I - Sports Track)',
+    'Master Teacher II (Senior High School Master Teacher II - Sports Track)',
+    'Master Teacher III (Senior High School Master Teacher III - Sports Track)',
+    'Master Teacher IV (Senior High School Master Teacher IV - Sports Track)',
+    'Master Teacher V (Senior High School Master Teacher V - Sports Track)',
+    'Teacher I (Senior High School Teacher I - Technical Vocational Track (TVL))',
+    'Teacher II (Senior High School Teacher II - Technical Vocational Track (TVL))',
+    'Teacher III (Senior High School Teacher III - Technical Vocational Track (TVL))',
+    'Teacher IV (Senior High School Teacher IV - Technical Vocational Track (TVL))',
+    'Teacher V (Senior High School Teacher V - Technical Vocational Track (TVL))',
+    'Teacher VI (Senior High School Teacher VI - Technical Vocational Track (TVL))',
+    'Teacher VII (Senior High School Teacher VII - Technical Vocational Track (TVL))',
+    'Master Teacher I (Senior High School Master Teacher I - Technical Vocational Track (TVL))',
+    'Master Teacher II (Senior High School Master Teacher II - Technical Vocational Track (TVL))',
+    'Master Teacher III (Senior High School Master Teacher III - Technical Vocational Track (TVL))',
+    'Master Teacher IV (Senior High School Master Teacher IV - Technical Vocational Track (TVL))',
+    'Master Teacher V (Senior High School Master Teacher V - Technical Vocational Track (TVL))',
+    'Guidance Coordinator I',
+    'Guidance Coordinator II',
+    'Guidance Coordinator III',
+    'Guidance Counselor I',
+    'Guidance Counselor II',
+    'Guidance Counselor III',
+    'Guidance Services Associate I',
+    'Guidance Services Associate II',
+    'Guidance Services Specialist I',
+    'Guidance Services Specialist II',
+    'Guidance Services Specialist III',
+    'Guidance Services Specialist IV',
+    'Guidance Services Specialist V',
+    'Special Science Teacher I',
+    'SPED Teacher I',
+    'SPED Teacher II',
+    'SPED Teacher III',
+    'Attorney III',
+    'Accountant III',
+    'Information Technology Officer I',
+    'Administrative Officer V',
+    'Administrative Officer IV',
+    'Administrative Officer II',
+    'Project Development Officer I',
+    'Administrative Assistant III',
+    'Administrative Assistant II',
+    'Administrative Assistant I',
+    'Administrative Aide VI',
+    'Administrative Aide IV',
+    'Administrative Aide I',
+    'Chief Education Supervisor *for CID/SGOD Chief',
+    'Education Program Supervisor *for LRMDS Manager, QA Coord.',
+    'Education Program Supervisor',
+    'Public Schools District Supervisor',
+    'Education Program Specialist II *for ALS',
+    'Librarian II',
+    'Project Development Officer II',
+    'Medical Officer III',
+    'Engineer III',
+    'Senior Education Program Specialist',
+    'Planning Officer III',
+    'Dentist II',
+    'Education Program Specialist II *for Human Resource Division',
+    'Education Program Specialist II *for School Management Monitoring and Evaluation',
+    'Education Program Specialist II *for School Mobilization and Networking',
+    'Project Development Officer II *for DRRM',
+    'Nurse II',
+    'Project Development Officer I (Youth Formation Coordinator)',
+];
+
 $errors = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -62,6 +189,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $address = trim((string)($_POST['address'] ?? ''));
     $dob = (string)($_POST['date_of_birth'] ?? '');
     $civilStatus = trim((string)($_POST['civil_status'] ?? ''));
+    $designation = trim((string)($_POST['designation'] ?? ''));
     $region = trim((string)($_POST['region'] ?? $defaults['region']));
     $division = trim((string)($_POST['division'] ?? $defaults['division']));
     $district = trim((string)($_POST['district'] ?? ''));
@@ -141,11 +269,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Invalid civil status.';
     }
 
+    if ($designation !== '' && !in_array($designation, $designationOptions, true)) {
+        $errors[] = 'Invalid designation.';
+    }
+
     if (!$errors) {
         try {
             $stmt = db()->prepare(
-                'INSERT INTO patients (school, level, entry_date, fullname, age, sex, address, date_of_birth, civil_status, region, division, district, hmo_provider)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                'INSERT INTO patients (school, level, entry_date, fullname, age, sex, address, date_of_birth, civil_status, designation, region, division, district, hmo_provider)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
             );
 
             $stmt->execute([
@@ -158,6 +290,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $address === '' ? null : $address,
                 $dob === '' ? null : $dob,
                 $civilStatus === '' ? null : $civilStatus,
+                $designation === '' ? null : $designation,
                 $region === '' ? $defaults['region'] : $region,
                 $division === '' ? $defaults['division'] : $division,
                 $district === '' ? null : $district,
@@ -189,6 +322,7 @@ $schoolsForLevel = match ($postedLevel) {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Patient Entry - <?= e($cfg['app_name']) ?></title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
   <link href="<?= e(asset('public/assets/css/styles.css')) ?>" rel="stylesheet">
 </head>
 <body class="bg-light">
@@ -229,22 +363,38 @@ $schoolsForLevel = match ($postedLevel) {
   <main class="container py-4 py-md-5" style="max-width:980px">
 
     <?php if ($success || $errors): ?>
-      <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1080;">
+      <div class="toast-stack-top-center">
         <?php if ($success): ?>
-          <div class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="2200">
+          <div class="toast toast-flash toast-flash--success" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="2200">
             <div class="d-flex">
-              <div class="toast-body text-center"><?= e($success) ?></div>
-              <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+              <div class="toast-body">
+                <div class="toast-flash__row">
+                  <i class="bi bi-check-circle-fill toast-flash__icon" aria-hidden="true"></i>
+                  <div class="toast-flash__text">
+                    <div class="toast-flash__title">Success:</div>
+                    <div class="toast-flash__message"><?= e($success) ?></div>
+                  </div>
+                </div>
+              </div>
+              <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
             </div>
           </div>
         <?php endif; ?>
 
         <?php if ($errors): ?>
           <?php foreach ($errors as $err): ?>
-            <div class="toast align-items-center text-bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="3000">
+            <div class="toast toast-flash toast-flash--error" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="3000">
               <div class="d-flex">
-                <div class="toast-body text-center"><?= e($err) ?></div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                <div class="toast-body">
+                  <div class="toast-flash__row">
+                    <i class="bi bi-slash-circle-fill toast-flash__icon" aria-hidden="true"></i>
+                    <div class="toast-flash__text">
+                      <div class="toast-flash__title">Error:</div>
+                      <div class="toast-flash__message"><?= e($err) ?></div>
+                    </div>
+                  </div>
+                </div>
+                <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
               </div>
             </div>
           <?php endforeach; ?>
@@ -341,6 +491,14 @@ $schoolsForLevel = match ($postedLevel) {
             <div class="col-12 col-md-4">
               <label class="form-label">Region</label>
               <input class="form-control" name="region" value="<?= e((string)($_POST['region'] ?? $defaults['region'])) ?>">
+            </div>
+
+            <div class="col-12 col-md-8">
+              <label class="form-label">Designation</label>
+              <div class="ac-wrap">
+                <input class="form-control" id="designationInput" name="designation" value="<?= e((string)($_POST['designation'] ?? '')) ?>" placeholder="Type to search..." autocomplete="off">
+                <div class="ac-menu" id="designationMenu" role="listbox" aria-label="Designation options"></div>
+              </div>
             </div>
 
             <div class="col-12 col-md-4">
@@ -453,6 +611,134 @@ $schoolsForLevel = match ($postedLevel) {
       toasts.forEach(function(el){
         try { new bootstrap.Toast(el).show(); } catch (e) {}
       });
+    })();
+  </script>
+
+  <script>
+    (function(){
+      var input = document.getElementById('designationInput');
+      var menu = document.getElementById('designationMenu');
+      if (!input || !menu) return;
+
+      var options = <?php echo json_encode(array_values($designationOptions), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+      var activeIndex = -1;
+      var visible = [];
+
+      function placeMenu(){
+        var r = input.getBoundingClientRect();
+        var vh = window.innerHeight || document.documentElement.clientHeight || 0;
+        var margin = 8;
+        var below = vh - r.bottom - margin;
+        var above = r.top - margin;
+        var openUp = (below < 220 && above > below);
+        var space = openUp ? above : below;
+        var maxH = Math.max(120, Math.min(280, space - 12));
+
+        menu.style.position = 'fixed';
+        menu.style.left = r.left + 'px';
+        menu.style.width = r.width + 'px';
+        menu.style.maxHeight = maxH + 'px';
+
+        if (openUp) {
+          menu.style.top = 'auto';
+          menu.style.bottom = (vh - r.top + 6) + 'px';
+        } else {
+          menu.style.bottom = 'auto';
+          menu.style.top = (r.bottom + 6) + 'px';
+        }
+      }
+
+      function closeMenu(){
+        menu.style.display = 'none';
+        menu.innerHTML = '';
+        activeIndex = -1;
+      }
+
+      function openMenu(){
+        if (menu.innerHTML.trim() === '') return;
+        placeMenu();
+        menu.style.display = 'block';
+      }
+
+      function setActive(idx){
+        activeIndex = idx;
+        var items = menu.querySelectorAll('.ac-item');
+        items.forEach(function(btn, i){
+          if (i === idx) btn.classList.add('is-active');
+          else btn.classList.remove('is-active');
+        });
+        if (idx >= 0) {
+          try { items[idx].scrollIntoView({ block: 'nearest' }); } catch (e) {}
+        }
+      }
+
+      function render(){
+        var q = (input.value || '').toLowerCase();
+        visible = options.filter(function(o){
+          return q === '' ? true : String(o).toLowerCase().includes(q);
+        }).slice(0, 200);
+
+        menu.innerHTML = visible.map(function(o, i){
+          var safe = String(o)
+            .replace(/&/g,'&amp;')
+            .replace(/</g,'&lt;')
+            .replace(/>/g,'&gt;')
+            .replace(/"/g,'&quot;')
+            .replace(/'/g,'&#39;');
+          return '<button type="button" class="ac-item" role="option" data-idx="' + i + '">' + safe + '</button>';
+        }).join('');
+
+        if (visible.length) {
+          openMenu();
+          setActive(-1);
+        } else {
+          closeMenu();
+        }
+      }
+
+      input.addEventListener('input', render);
+      input.addEventListener('focus', render);
+      input.addEventListener('keydown', function(e){
+        if (menu.style.display !== 'block') return;
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          setActive(Math.min(activeIndex + 1, visible.length - 1));
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          setActive(Math.max(activeIndex - 1, 0));
+        } else if (e.key === 'Enter') {
+          if (activeIndex >= 0 && visible[activeIndex]) {
+            e.preventDefault();
+            input.value = visible[activeIndex];
+            closeMenu();
+          }
+        } else if (e.key === 'Escape') {
+          closeMenu();
+        }
+      });
+
+      menu.addEventListener('mousedown', function(e){
+        var btn = e.target && e.target.closest ? e.target.closest('.ac-item') : null;
+        if (!btn) return;
+        e.preventDefault();
+        var idx = Number(btn.getAttribute('data-idx') || -1);
+        if (idx >= 0 && visible[idx]) {
+          input.value = visible[idx];
+          closeMenu();
+          input.focus();
+        }
+      });
+
+      document.addEventListener('click', function(e){
+        if (!menu.contains(e.target) && e.target !== input) closeMenu();
+      });
+
+      window.addEventListener('resize', function(){
+        if (menu.style.display === 'block') placeMenu();
+      });
+      window.addEventListener('scroll', function(){
+        if (menu.style.display === 'block') placeMenu();
+      }, true);
     })();
   </script>
 </body>

@@ -47,10 +47,47 @@ body{font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial,"Noto San
 .tile-sub{color:#64748b;font-weight:500}
 
 .tile-cta{margin-top:14px;display:inline-flex;align-items:center;gap:10px;font-weight:800;color:#0f172a}
-.tile-cta i{transition:transform .18s ease}
+.tile .tile-cta i{transition:transform .18s ease}
 .tile:hover .tile-cta i{transform:translateX(2px)}
 .tile-cta{padding:10px 14px;border-radius:999px;background:#e3f2fd;border:1px solid rgba(25,118,210,.18);width:fit-content;color:#0d47a1}
 .tile:hover .tile-cta{background:#d7ecfb}
+
+.badge.text-bg-success{background-color:#34d399!important;color:#fff}
+
+ .toast-stack-top-center{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:1080;display:flex;flex-direction:column;gap:12px;align-items:center;padding:0 12px}
+ .toast-stack-top-center .toast{width:min(520px,calc(100vw - 24px));border-radius:12px;box-shadow:0 10px 20px rgba(2,6,23,.14)}
+
+ .toast-flash{background:#fff;border:1px solid rgba(148,163,184,.45)}
+ .toast-flash .toast-body{padding:14px 16px}
+ .toast-flash__row{display:flex;align-items:center;gap:12px}
+ .toast-flash__icon{font-size:20px;line-height:1;flex:0 0 auto}
+ .toast-flash__text{min-width:0;flex:1}
+ .toast-flash__title{font-weight:800;font-size:14px;line-height:1.1;margin:0}
+ .toast-flash__message{font-weight:600;font-size:13px;line-height:1.25;margin:2px 0 0 0;color:#0f172a;word-break:break-word}
+ .toast-flash .btn-close{opacity:.45}
+ .toast-flash .btn-close:hover{opacity:.7}
+
+ .toast-flash--info{background:#d9eef7;border-color:#9cc6d9}
+ .toast-flash--info .toast-flash__icon{color:#2f6f91}
+ .toast-flash--info .toast-flash__title{color:#2f6f91}
+
+ .toast-flash--warning{background:#f7f0cf;border-color:#dbc684}
+ .toast-flash--warning .toast-flash__icon{color:#8a6a1a}
+ .toast-flash--warning .toast-flash__title{color:#8a6a1a}
+
+ .toast-flash--error{background:#f3cfcf;border-color:#d79a9a}
+ .toast-flash--error .toast-flash__icon{color:#8f2a2a}
+ .toast-flash--error .toast-flash__title{color:#8f2a2a}
+
+ .toast-flash--success{background:#d9edd7;border-color:#9dca98}
+ .toast-flash--success .toast-flash__icon{color:#2f6b2a}
+ .toast-flash--success .toast-flash__title{color:#2f6b2a}
+
+ .ac-wrap{position:relative}
+ .ac-menu{position:absolute;top:calc(100% + 6px);left:0;right:0;max-height:280px;overflow-y:auto;overflow-x:auto;background:#111827;border:1px solid rgba(148,163,184,.35);border-radius:12px;box-shadow:0 20px 35px rgba(2,6,23,.22);z-index:1200;padding:8px;display:none}
+ .ac-item{display:block;width:100%;text-align:left;background:transparent;border:0;color:#e5e7eb;font-weight:600;padding:8px 10px;border-radius:10px;white-space:nowrap;overflow:visible;cursor:pointer}
+ .ac-item:hover,.ac-item:focus{background:rgba(148,163,184,.18);outline:0}
+ .ac-item.is-active{background:rgba(148,163,184,.22)}
 
 .tile-icon{width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;flex:0 0 46px;border:1px solid rgba(148,163,184,.22);box-shadow:0 1px 2px rgba(2,6,23,.08),0 10px 18px rgba(2,6,23,.10)}
 .tile-icon i{font-size:20px;line-height:1}

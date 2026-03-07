@@ -8,6 +8,9 @@ require __DIR__ . '/../app/auth.php';
 require_login('medical', 'medical/index.php');
 $cfg = base_config();
 
+$flashSuccess = get_flash('success');
+$flashError = get_flash('error');
+
 ?><!doctype html>
 <html lang="en">
 <head>
@@ -15,6 +18,7 @@ $cfg = base_config();
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Medical Dashboard - <?= e($cfg['app_name']) ?></title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
   <link href="<?= e(asset('public/assets/css/styles.css')) ?>" rel="stylesheet">
 </head>
 <body class="bg-light">
@@ -47,6 +51,44 @@ $cfg = base_config();
   </header>
 
   <main class="container py-4 py-md-5">
+    <?php if ($flashSuccess || $flashError): ?>
+      <div class="toast-stack-top-center">
+        <?php if ($flashSuccess): ?>
+          <div class="toast toast-flash toast-flash--success" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="2200">
+            <div class="d-flex">
+              <div class="toast-body">
+                <div class="toast-flash__row">
+                  <i class="bi bi-check-circle-fill toast-flash__icon" aria-hidden="true"></i>
+                  <div class="toast-flash__text">
+                    <div class="toast-flash__title">Success:</div>
+                    <div class="toast-flash__message"><?= e($flashSuccess) ?></div>
+                  </div>
+                </div>
+              </div>
+              <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+          </div>
+        <?php endif; ?>
+
+        <?php if ($flashError): ?>
+          <div class="toast toast-flash toast-flash--error" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="3200">
+            <div class="d-flex">
+              <div class="toast-body">
+                <div class="toast-flash__row">
+                  <i class="bi bi-slash-circle-fill toast-flash__icon" aria-hidden="true"></i>
+                  <div class="toast-flash__text">
+                    <div class="toast-flash__title">Error:</div>
+                    <div class="toast-flash__message"><?= e($flashError) ?></div>
+                  </div>
+                </div>
+              </div>
+              <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+          </div>
+        <?php endif; ?>
+      </div>
+    <?php endif; ?>
+
     <div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
       <!-- <div>
         <div class="h4 mb-0">Submitted Patients</div>
@@ -162,5 +204,16 @@ $cfg = base_config();
       })();
     </script>
   </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    (function(){
+      if (!window.bootstrap) return;
+      var toasts = document.querySelectorAll('.toast');
+      toasts.forEach(function(el){
+        try { new bootstrap.Toast(el).show(); } catch (e) {}
+      });
+    })();
+  </script>
 </body>
 </html>
