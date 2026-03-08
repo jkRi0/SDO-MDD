@@ -32,6 +32,9 @@ $defaults = [
     'height_cm' => '',
     'height_unit' => 'cm',
     'weight_kg' => '',
+    'bmi_value' => '',
+    'bmi_category' => '',
+    'bmi_percentile' => '',
     'temperature_c' => '',
     'pulse_rate' => '',
     'rr' => '',
@@ -58,7 +61,7 @@ try {
     $stmt = db()->prepare(
         'SELECT
             assessed_by_name, license_no,
-            height_cm, weight_kg, temperature_c, pulse_rate, rr, o2_sat, bp_systolic, bp_diastolic,
+            height_cm, weight_kg, bmi_value, bmi_category, bmi_percentile, temperature_c, pulse_rate, rr, o2_sat, bp_systolic, bp_diastolic,
             past_medical_history,
             ob_lmp, ob_gtpal, ob_chest_xray, ob_ecg,
             physical_findings, stress_level, coping_level
@@ -75,6 +78,9 @@ try {
 
         $defaults['height_cm'] = $last['height_cm'] === null ? '' : (string)$last['height_cm'];
         $defaults['weight_kg'] = $last['weight_kg'] === null ? '' : (string)$last['weight_kg'];
+        $defaults['bmi_value'] = $last['bmi_value'] === null ? '' : (string)$last['bmi_value'];
+        $defaults['bmi_category'] = $last['bmi_category'] === null ? '' : (string)$last['bmi_category'];
+        $defaults['bmi_percentile'] = $last['bmi_percentile'] === null ? '' : (string)$last['bmi_percentile'];
         $defaults['temperature_c'] = $last['temperature_c'] === null ? '' : (string)$last['temperature_c'];
         $defaults['pulse_rate'] = $last['pulse_rate'] === null ? '' : (string)$last['pulse_rate'];
         $defaults['rr'] = $last['rr'] === null ? '' : (string)$last['rr'];
@@ -298,6 +304,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'height_cm' => trim((string)($_POST['height_cm'] ?? '')),
         'height_unit' => trim((string)($_POST['height_unit'] ?? 'cm')),
         'weight_kg' => trim((string)($_POST['weight_kg'] ?? '')),
+        'bmi_value' => trim((string)($_POST['bmi_value'] ?? '')),
+        'bmi_category' => trim((string)($_POST['bmi_category'] ?? '')),
+        'bmi_percentile' => trim((string)($_POST['bmi_percentile'] ?? '')),
         'temperature_c' => trim((string)($_POST['temperature_c'] ?? '')),
         'pulse_rate' => trim((string)($_POST['pulse_rate'] ?? '')),
         'rr' => trim((string)($_POST['rr'] ?? '')),
@@ -463,12 +472,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $ins = db()->prepare(
                 'INSERT INTO medical_assessments (
                     patient_id, assessed_by_name, license_no,
-                    height_cm, weight_kg, temperature_c, pulse_rate, rr, o2_sat, bp_systolic, bp_diastolic,
+                    height_cm, weight_kg, bmi_value, bmi_category, bmi_percentile, temperature_c, pulse_rate, rr, o2_sat, bp_systolic, bp_diastolic,
                     past_medical_history, ob_lmp, ob_gtpal, ob_chest_xray, ob_ecg,
                     physical_findings, stress_level, coping_level
                  ) VALUES (
                     ?, ?, ?,
-                    ?, ?, ?, ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                     ?, ?, ?, ?, ?,
                     ?, ?, ?
                  )'
@@ -480,6 +489,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $a['license_no'],
                 $a['height_cm'] === '' ? null : (float)$a['height_cm'],
                 $a['weight_kg'] === '' ? null : (float)$a['weight_kg'],
+                $a['bmi_value'] === '' ? null : (float)$a['bmi_value'],
+                $a['bmi_category'] === '' ? null : $a['bmi_category'],
+                $a['bmi_percentile'] === '' ? null : (float)$a['bmi_percentile'],
                 $a['temperature_c'] === '' ? null : (float)$a['temperature_c'],
                 $a['pulse_rate'] === '' ? null : (int)$a['pulse_rate'],
                 $a['rr'] === '' ? null : (int)$a['rr'],
@@ -521,6 +533,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
   <link href="<?= e(asset('public/assets/css/styles.css')) ?>" rel="stylesheet">
+  <style>
+    @media (min-width: 768px) {
+      .medical-top-row .form-label { min-height: 2.5rem; }
+    }
+  </style>
 </head>
 <body class="bg-light">
   <header class="appbar">
@@ -561,6 +578,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <form method="post" class="vstack gap-4">
           <input type="hidden" name="id" value="<?= (int)$patient['id'] ?>">
+          <input type="hidden" name="bmi_value" id="bmiValueHidden" value="<?= e((string)($defaults['bmi_value'] ?? '')) ?>">
+          <input type="hidden" name="bmi_category" id="bmiCategoryHidden" value="<?= e((string)($defaults['bmi_category'] ?? '')) ?>">
+          <input type="hidden" name="bmi_percentile" id="bmiPercentileHidden" value="<?= e((string)($defaults['bmi_percentile'] ?? '')) ?>">
 
           <div>
             <div class="h5 mb-2 text-primary">PART I. Personal Details</div>
@@ -658,22 +678,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
           <div>
             <div class="h5 mb-2 text-primary">PART II. Medical Details</div>
-            <div class="row g-3">
+            <div class="row g-3 medical-top-row">
               <div class="col-12 col-md-3">
                 <label class="form-label">Height</label>
                 <div class="input-group">
-                  <input class="form-control" type="number" step="0.01" min="0" max="1000" name="height_cm" value="<?= e((string)($defaults['height_cm'] ?? '')) ?>" placeholder="Height">
-                  <select class="form-select" name="height_unit" style="max-width: 92px;">
+                  <input class="form-control" type="number" step="0.01" min="0" max="1000" name="height_cm" id="heightInput" value="<?= e((string)($defaults['height_cm'] ?? '')) ?>" placeholder="Height">
+                  <select class="form-select" name="height_unit" id="heightUnit" style="max-width: 76px;">
                     <option value="cm" <?= ((string)($defaults['height_unit'] ?? 'cm') === 'cm') ? 'selected' : '' ?>>cm</option>
                     <option value="m" <?= ((string)($defaults['height_unit'] ?? 'cm') === 'm') ? 'selected' : '' ?>>m</option>
                     <option value="ft" <?= ((string)($defaults['height_unit'] ?? 'cm') === 'ft') ? 'selected' : '' ?>>ft</option>
                   </select>
                 </div>
               </div>
-              <div class="col-12 col-md-3">
+              <div class="col-12 col-md-2">
                 <label class="form-label">Weight</label>
-                <input class="form-control" type="number" step="0.01" min="0" max="600" name="weight_kg" value="<?= e((string)($defaults['weight_kg'] ?? '')) ?>" placeholder="kg">
+                <input class="form-control" type="number" step="0.01" min="0" max="600" name="weight_kg" id="weightInput" value="<?= e((string)($defaults['weight_kg'] ?? '')) ?>" placeholder="kg">
               </div>
+
+              <div class="col-12 col-md-2">
+                <label class="form-label">BMI</label>
+                <input class="form-control" id="bmiValue" value="<?= e((string)($defaults['bmi_value'] ?? '')) ?>" readonly>
+              </div>
+
+              <div class="col-12 col-md-3">
+                <label class="form-label">Classification / Category</label>
+                <input class="form-control" id="bmiCategory" value="<?= e((string)($defaults['bmi_category'] ?? '')) ?>" readonly>
+              </div>
+
+              <div class="col-12 col-md-2" id="bmiPercentileWrap" style="display:none;">
+                <label class="form-label">BMI Percentile (Age ≤ 20)</label>
+                <input class="form-control" type="text" id="bmiPercentile" value="<?= e((string)($defaults['bmi_percentile'] ?? '')) ?>" readonly>
+              </div>
+
+              <div class="col-12">
+                <div class="row g-3">
+                  <div class="d-none d-md-block col-md-3"></div>
+                  <div class="d-none d-md-block col-md-2"></div>
+                  <div class="col-12 col-md-2">
+                    <div class="form-text" id="bmiFormula">BMI = weight (kg) / [height (m)]²</div>
+                  </div>
+                  <div class="col-12 col-md-3">
+                    <div class="form-text" id="bmiBasis"></div>
+                  </div>
+                  <div class="col-12 col-md-2" id="bmiPercentileNoteWrap" style="display:none;">
+                    <div class="form-text">Computed automatically using BMI-for-age reference (sex + age).</div>
+                  </div>
+                </div>
+              </div>
+
               <div class="col-12 col-md-3">
                 <label class="form-label">Temperature</label>
                 <input class="form-control" type="number" step="0.1" min="0" max="60" name="temperature_c" value="<?= e((string)($defaults['temperature_c'] ?? '')) ?>" placeholder="°C">
@@ -855,6 +907,269 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       bindToggle('pmh_special_cancer', 'pmh_cancer_type');
       bindToggle('pmh_special_operation', 'pmh_operation');
       bindToggle('pmh_special_confinement', 'pmh_confinement');
+    })();
+  </script>
+
+  <script>
+    (function(){
+      var ageInput = document.querySelector('input[name="age"]');
+      var sexInput = document.querySelector('select[name="sex"]');
+      var heightInput = document.getElementById('heightInput');
+      var heightUnit = document.getElementById('heightUnit');
+      var weightInput = document.getElementById('weightInput');
+      var bmiValue = document.getElementById('bmiValue');
+      var bmiCategory = document.getElementById('bmiCategory');
+      var bmiBasis = document.getElementById('bmiBasis');
+      var pctWrap = document.getElementById('bmiPercentileWrap');
+      var pctInput = document.getElementById('bmiPercentile');
+      var pctNoteWrap = document.getElementById('bmiPercentileNoteWrap');
+
+      var bmiValueHidden = document.getElementById('bmiValueHidden');
+      var bmiCategoryHidden = document.getElementById('bmiCategoryHidden');
+      var bmiPercentileHidden = document.getElementById('bmiPercentileHidden');
+
+      if (!ageInput || !sexInput || !heightInput || !heightUnit || !weightInput || !bmiValue || !bmiCategory || !bmiBasis || !pctWrap || !pctInput || !pctNoteWrap || !bmiValueHidden || !bmiCategoryHidden || !bmiPercentileHidden) return;
+
+      var lmsBySex = null; // { 1: [{agemos,L,M,S}], 2: [...] }
+      var lmsReady = false;
+      var lmsUrl = <?php echo json_encode(asset('public/files/bmi-age-2022.csv'), JSON_UNESCAPED_SLASHES); ?>;
+
+      function toNumber(v){
+        var n = Number(String(v || '').trim());
+        return Number.isFinite(n) ? n : NaN;
+      }
+
+      // Pediatric percentile uses Age field only: ageMos = ageYears * 12
+
+      function erf(x){
+        // Abramowitz and Stegun approximation
+        var sign = x >= 0 ? 1 : -1;
+        x = Math.abs(x);
+        var a1 = 0.254829592;
+        var a2 = -0.284496736;
+        var a3 = 1.421413741;
+        var a4 = -1.453152027;
+        var a5 = 1.061405429;
+        var p = 0.3275911;
+        var t = 1 / (1 + p * x);
+        var y = 1 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+        return sign * y;
+      }
+
+      function normCdf(z){
+        return 0.5 * (1 + erf(z / Math.SQRT2));
+      }
+
+      function csvToLms(text){
+        var lines = String(text || '').split(/\r?\n/).filter(function(l){ return l.trim() !== ''; });
+        if (lines.length < 2) return null;
+        var header = lines[0].split(',').map(function(s){ return s.trim(); });
+        var idxSex = header.indexOf('sex');
+        var idxAge = header.indexOf('agemos');
+        var idxL = header.indexOf('L');
+        var idxM = header.indexOf('M');
+        var idxS = header.indexOf('S');
+        if (idxSex < 0 || idxAge < 0 || idxL < 0 || idxM < 0 || idxS < 0) return null;
+
+        var out = { 1: [], 2: [] };
+        for (var i = 1; i < lines.length; i++) {
+          var parts = lines[i].split(',');
+          if (parts.length < header.length) continue;
+          var sex = Number(parts[idxSex]);
+          var agemos = Number(parts[idxAge]);
+          var L = Number(parts[idxL]);
+          var M = Number(parts[idxM]);
+          var S = Number(parts[idxS]);
+          if (!Number.isFinite(sex) || !Number.isFinite(agemos) || !Number.isFinite(L) || !Number.isFinite(M) || !Number.isFinite(S)) continue;
+          if (!out[sex]) out[sex] = [];
+          out[sex].push({ agemos: agemos, L: L, M: M, S: S });
+        }
+        Object.keys(out).forEach(function(k){
+          out[k].sort(function(a,b){ return a.agemos - b.agemos; });
+        });
+        return out;
+      }
+
+      function getLms(sexCode, ageMos){
+        if (!lmsBySex || !lmsBySex[sexCode] || !lmsBySex[sexCode].length) return null;
+        var arr = lmsBySex[sexCode];
+        if (!Number.isFinite(ageMos)) return null;
+        if (ageMos < arr[0].agemos || ageMos > arr[arr.length - 1].agemos) return null;
+
+        // find right bracket
+        var lo = 0;
+        var hi = arr.length - 1;
+        while (lo <= hi) {
+          var mid = (lo + hi) >> 1;
+          if (arr[mid].agemos === ageMos) return arr[mid];
+          if (arr[mid].agemos < ageMos) lo = mid + 1;
+          else hi = mid - 1;
+        }
+        var i1 = Math.max(1, lo);
+        var a = arr[i1 - 1];
+        var b = arr[i1];
+        var t = (ageMos - a.agemos) / (b.agemos - a.agemos);
+        return {
+          agemos: ageMos,
+          L: a.L + (b.L - a.L) * t,
+          M: a.M + (b.M - a.M) * t,
+          S: a.S + (b.S - a.S) * t
+        };
+      }
+
+      function lmsPercentile(bmi, lms){
+        if (!Number.isFinite(bmi) || bmi <= 0 || !lms) return NaN;
+        var L = lms.L;
+        var M = lms.M;
+        var S = lms.S;
+        if (!Number.isFinite(L) || !Number.isFinite(M) || !Number.isFinite(S) || M <= 0 || S <= 0) return NaN;
+        var z;
+        if (Math.abs(L) < 1e-8) {
+          z = Math.log(bmi / M) / S;
+        } else {
+          z = (Math.pow(bmi / M, L) - 1) / (L * S);
+        }
+        var p = normCdf(z) * 100;
+        if (!Number.isFinite(p)) return NaN;
+        return Math.max(0, Math.min(100, p));
+      }
+
+      function ensureLmsLoaded(){
+        if (lmsReady) return Promise.resolve(true);
+        if (lmsBySex) return Promise.resolve(true);
+        return fetch(lmsUrl, { cache: 'force-cache' })
+          .then(function(r){ return r.ok ? r.text() : Promise.reject(new Error('fetch')); })
+          .then(function(t){
+            lmsBySex = csvToLms(t);
+            lmsReady = !!lmsBySex;
+            return lmsReady;
+          })
+          .catch(function(){
+            lmsBySex = null;
+            lmsReady = false;
+            return false;
+          });
+      }
+
+      function heightToMeters(h, unit){
+        if (!Number.isFinite(h) || h <= 0) return NaN;
+        if (unit === 'm') return h;
+        if (unit === 'ft') return h * 0.3048;
+        return h / 100;
+      }
+
+      function calcBmi(){
+        var age = toNumber(ageInput.value);
+        var hRaw = toNumber(heightInput.value);
+        var w = toNumber(weightInput.value);
+        var unit = String(heightUnit.value || 'cm');
+        var hM = heightToMeters(hRaw, unit);
+
+        var bmi = (Number.isFinite(w) && w > 0 && Number.isFinite(hM) && hM > 0) ? (w / (hM * hM)) : NaN;
+        if (Number.isFinite(bmi)) {
+          bmiValue.value = bmi.toFixed(2);
+          bmiValueHidden.value = bmi.toFixed(2);
+        } else {
+          bmiValue.value = '';
+          bmiValueHidden.value = '';
+        }
+
+        var isAdult = Number.isFinite(age) ? (age >= 21) : true;
+        pctWrap.style.display = isAdult ? 'none' : '';
+        pctNoteWrap.style.display = isAdult ? 'none' : '';
+
+        if (!isAdult) {
+          pctInput.value = '';
+        }
+
+        if (!Number.isFinite(bmi)) {
+          bmiCategory.value = '';
+          bmiCategoryHidden.value = '';
+          bmiPercentileHidden.value = '';
+          bmiBasis.textContent = '';
+          return;
+        }
+
+        if (isAdult) {
+          var c = '';
+          if (bmi < 16) c = 'Severe Thinness';
+          else if (bmi < 17) c = 'Moderate Thinness';
+          else if (bmi < 18.5) c = 'Mild Thinness';
+          else if (bmi < 25) c = 'Normal';
+          else if (bmi < 30) c = 'Overweight';
+          else if (bmi < 35) c = 'Obese Class I';
+          else if (bmi < 40) c = 'Obese Class II';
+          else c = 'Obese Class III';
+          bmiCategory.value = c;
+          bmiCategoryHidden.value = c;
+          bmiPercentileHidden.value = '';
+          bmiBasis.textContent = 'Adult BMI classification (Age ≥ 21)';
+        } else {
+          // Pediatric: compute percentile using LMS reference (2–20 years)
+          var sexVal = String(sexInput.value || '');
+          var sexCode = (sexVal === 'Male') ? 1 : (sexVal === 'Female' ? 2 : 0);
+          if (!sexCode) {
+            pctInput.value = '';
+            bmiCategory.value = '';
+            bmiBasis.textContent = 'Pediatric BMI percentile requires Sex = Male/Female.';
+            return;
+          }
+
+          if (!Number.isFinite(age) || age < 2 || age > 20) {
+            pctInput.value = '';
+            bmiCategory.value = 'Requires BMI percentile';
+            bmiCategoryHidden.value = 'Requires BMI percentile';
+            bmiPercentileHidden.value = '';
+            bmiBasis.textContent = 'Pediatric BMI percentile available for ages 2–20 only.';
+            return;
+          }
+
+          var ageMos = age * 12;
+          var usingAgeFallback = false;
+
+          ensureLmsLoaded().then(function(ok){
+            if (!ok) {
+              pctInput.value = '';
+              bmiCategory.value = '';
+              bmiBasis.textContent = 'Failed to load BMI-for-age reference table.';
+              return;
+            }
+
+            var lms = getLms(sexCode, ageMos);
+            var p = lmsPercentile(bmi, lms);
+            if (!Number.isFinite(p)) {
+              pctInput.value = '';
+              bmiCategory.value = 'Requires BMI percentile';
+              bmiCategoryHidden.value = 'Requires BMI percentile';
+              bmiPercentileHidden.value = '';
+              bmiBasis.textContent = 'Pediatric BMI percentile available for ages 2–20 only.' + (Number.isFinite(ageMos) ? (' (computed age: ' + ageMos.toFixed(1) + ' months)') : '');
+              return;
+            }
+
+            pctInput.value = p.toFixed(1) + '%';
+            bmiPercentileHidden.value = p.toFixed(1);
+
+            var cat = '';
+            if (p < 5) cat = 'Underweight';
+            else if (p < 85) cat = 'Healthy weight';
+            else if (p <= 95) cat = 'At risk of overweight';
+            else cat = 'Overweight';
+            bmiCategory.value = cat;
+            bmiCategoryHidden.value = cat;
+            bmiBasis.textContent = 'Pediatric category based on BMI-for-age percentile (Age ≤ 20)';
+          });
+        }
+      }
+
+      ['input','change','blur'].forEach(function(evt){
+        ageInput.addEventListener(evt, calcBmi);
+        sexInput.addEventListener(evt, calcBmi);
+        heightInput.addEventListener(evt, calcBmi);
+        heightUnit.addEventListener(evt, calcBmi);
+        weightInput.addEventListener(evt, calcBmi);
+      });
+
+      calcBmi();
     })();
   </script>
 

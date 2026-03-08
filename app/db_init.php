@@ -103,6 +103,9 @@ function sync_database(PDO $pdo): void
         license_no VARCHAR(100) NOT NULL,
         height_cm DECIMAL(6,2) NULL,
         weight_kg DECIMAL(6,2) NULL,
+        bmi_value DECIMAL(6,2) NULL,
+        bmi_category VARCHAR(60) NULL,
+        bmi_percentile DECIMAL(5,1) NULL,
         temperature_c DECIMAL(4,1) NULL,
         pulse_rate INT UNSIGNED NULL,
         rr INT UNSIGNED NULL,
@@ -122,6 +125,22 @@ function sync_database(PDO $pdo): void
         KEY idx_patient_id (patient_id),
         KEY idx_created_at (created_at)
     ) ENGINE=InnoDB");
+
+    // Add missing BMI columns if table already exists from old schema
+    try {
+        $medCols = $pdo->query("DESCRIBE medical_assessments")->fetchAll(PDO::FETCH_COLUMN);
+        if (!in_array('bmi_value', $medCols, true)) {
+            $pdo->exec("ALTER TABLE medical_assessments ADD COLUMN bmi_value DECIMAL(6,2) NULL AFTER weight_kg");
+        }
+        if (!in_array('bmi_category', $medCols, true)) {
+            $pdo->exec("ALTER TABLE medical_assessments ADD COLUMN bmi_category VARCHAR(60) NULL AFTER bmi_value");
+        }
+        if (!in_array('bmi_percentile', $medCols, true)) {
+            $pdo->exec("ALTER TABLE medical_assessments ADD COLUMN bmi_percentile DECIMAL(5,1) NULL AFTER bmi_category");
+        }
+    } catch (Throwable $e) {
+        // ignore migration failure
+    }
 
     // 4. Create Dental Assessments Table
     $pdo->exec("CREATE TABLE IF NOT EXISTS dental_assessments (
