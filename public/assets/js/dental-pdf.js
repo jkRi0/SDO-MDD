@@ -205,8 +205,8 @@
     doc.setFontSize(11);
     doc.text('DENTAL FORM', pageWidth / 2, top + 10, { align: 'center' });
 
-    var y = top + 14;
-    doc.setFontSize(8.5);
+    var y = top + 13;
+    doc.setFontSize(8.0);
     doc.setFont(undefined, 'bold');
     doc.text('School:', left, y);
     doc.setFont(undefined, 'normal');
@@ -219,7 +219,7 @@
     doc.text(d, left + 140, y);
     doc.line(left + 140, y + 1.2, right, y + 1.2);
 
-    y += 5.5;
+    y += 4.6;
     doc.setFont(undefined, 'bold');
     doc.text('Name:', left, y);
     doc.setFont(undefined, 'normal');
@@ -236,7 +236,7 @@
     doc.text(safeText(p.sex), left + 170, y);
     doc.line(left + 170, y + 1.2, right, y + 1.2);
 
-    y += 5.5;
+    y += 4.6;
     doc.setFont(undefined, 'bold');
     doc.text('Date of Birth:', left, y);
     doc.setFont(undefined, 'normal');
@@ -253,7 +253,7 @@
     doc.text(safeText(p.designation), left + 150, y);
     doc.line(left + 150, y + 1.2, right, y + 1.2);
 
-    y += 5.5;
+    y += 4.6;
     doc.setFont(undefined, 'bold');
     doc.text('Region:', left, y);
     doc.setFont(undefined, 'normal');
@@ -270,19 +270,19 @@
     doc.text(safeText(p.district), left + 156, y);
     doc.line(left + 156, y + 1.2, right, y + 1.2);
 
-    y += 4.5;
+    y += 3.8;
     var tableTop = y;
     var mhX = left;
     var mhW = 75;
     var ohX = mhX + mhW + 6;
     var ohW = right - ohX;
-    var rowH = 3.6;
-    doc.setFontSize(6.8);
+    var rowH = 3.2;
+    doc.setFontSize(6.6);
     doc.setFont(undefined, 'bold');
     doc.text('MEDICAL HISTORY', mhX + mhW / 2, tableTop, { align: 'center' });
     doc.text('ORAL HEALTH CONDITION', ohX + ohW / 2, tableTop, { align: 'center' });
 
-    var mhY = tableTop + 2.0;
+    var mhY = tableTop + 1.6;
     var mhRows = [
       { label: 'Allergy', key: 'mh_allergy' },
       { label: 'Asthma', key: 'mh_asthma' },
@@ -299,19 +299,19 @@
     doc.line(mhX, mhY + rowH, mhX + mhW, mhY + rowH);
     doc.line(mhX + mhW - 22, mhY, mhX + mhW - 22, mhY + rowH * (mhRows.length + 1));
     doc.line(mhX + mhW - 11, mhY, mhX + mhW - 11, mhY + rowH * (mhRows.length + 1));
-    doc.text('YES', mhX + mhW - 16.5, mhY + 3.6, { align: 'center' });
-    doc.text('NO', mhX + mhW - 5.5, mhY + 3.6, { align: 'center' });
+    doc.text('YES', mhX + mhW - 16.5, mhY + 2.55, { align: 'center' });
+    doc.text('NO', mhX + mhW - 5.5, mhY + 2.55, { align: 'center' });
 
     doc.setFont(undefined, 'normal');
     for (var i = 0; i < mhRows.length; i++) {
       var ry = mhY + rowH * (i + 1);
       doc.line(mhX, ry, mhX + mhW, ry);
-      doc.text(mhRows[i].label, mhX + 2, ry + 3.0);
+      doc.text(mhRows[i].label, mhX + 1.8, ry + 2.55);
       var yes = normalizeYesNo(a[mhRows[i].key]);
-      checkMark(doc, mhX + mhW - 16.5, ry + 3.0, yes);
-      checkMark(doc, mhX + mhW - 5.5, ry + 3.0, !yes);
+      checkMark(doc, mhX + mhW - 16.5, ry + 2.55, yes);
+      checkMark(doc, mhX + mhW - 5.5, ry + 2.55, !yes);
     }
-    var mhBottomY = mhY + rowH * (mhRows.length + 1) + 3.6;
+    var mhBottomY = mhY + rowH * (mhRows.length + 1) + 3.0;
     doc.setFont(undefined, 'bold');
     doc.text('OTHERS (Specify):', mhX, mhBottomY);
     doc.setFont(undefined, 'normal');
@@ -319,8 +319,8 @@
     doc.line(mhOthersX, mhBottomY + 1.2, mhX + mhW, mhBottomY + 1.2);
     doc.text(safeText(a.mh_others), mhOthersX, mhBottomY);
 
-    var ohY = tableTop + 2.5;
-    var ohRowH = 3.6;
+    var ohY = tableTop + 2.0;
+    var ohRowH = 3.2;
     // Rows: Date, Age, (Y/N header), then 4 condition rows
     var ohRowsCount = 7;
     var labelW = 62;
@@ -342,41 +342,41 @@
     }
 
     doc.setFont(undefined, 'bold');
-    doc.setFontSize(6.8);
-    doc.text('Date of Examination', ohX + 2, ohY + 2.7);
+    doc.setFontSize(6.6);
+    doc.text('Date of Examination', ohX + 1.8, ohY + 2.4);
     doc.setFont(undefined, 'normal');
-    doc.text(safeText(a.exam_date), labelSepX + 2, ohY + 2.7);
+    doc.text(safeText(a.exam_date), labelSepX + 1.8, ohY + 2.4);
     doc.setFont(undefined, 'bold');
-    doc.text('Age last birthday', ohX + 2, ohY + ohRowH + 2.7);
+    doc.text('Age last birthday', ohX + 1.8, ohY + ohRowH + 2.4);
     doc.setFont(undefined, 'normal');
-    doc.text(safeText(a.age_last_birthday), labelSepX + 2, ohY + ohRowH + 2.7);
+    doc.text(safeText(a.age_last_birthday), labelSepX + 1.8, ohY + ohRowH + 2.4);
 
     // Y / N headers (dedicated header row)
     doc.setFont(undefined, 'bold');
     doc.setFontSize(6.4);
     // Header row is rowIndex=2 (0-based): center Y/N in that row
-    var ynHeaderCenterY = ohY + ohRowH * 2 + 2.7;
+    var ynHeaderCenterY = ohY + ohRowH * 2 + 2.35;
     doc.text('YES', ynCenterY, ynHeaderCenterY, { align: 'center' });
     doc.text('NO', ynCenterN, ynHeaderCenterY, { align: 'center' });
-    doc.setFontSize(6.8);
+    doc.setFontSize(6.6);
 
     function ynCheck(xCenter, y, checked) {
       if (!checked) return;
-      doc.setFontSize(8);
+      doc.setFontSize(7.2);
       doc.setFont(undefined, 'bold');
       doc.text('/', xCenter, y, { align: 'center' });
       doc.setFont(undefined, 'normal');
-      doc.setFontSize(6.8);
+      doc.setFontSize(6.6);
     }
 
     function ynRow(rowIndex, label, key) {
       var base = ohY + ohRowH * rowIndex;
       doc.setFont(undefined, 'bold');
-      doc.text(label, ohX + 2, base + 3.0);
+      doc.text(label, ohX + 1.8, base + 2.55);
       doc.setFont(undefined, 'normal');
       var yes = normalizeYesNo(a[key]);
-      ynCheck(ynCenterY, base + 3.0, yes);
-      ynCheck(ynCenterN, base + 3.0, !yes);
+      ynCheck(ynCenterY, base + 2.55, yes);
+      ynCheck(ynCenterN, base + 2.55, !yes);
     }
 
     ynRow(3, 'Presence of Debris', 'debris');
@@ -386,8 +386,8 @@
 
     // Occlusion / TMJ / Dentofacial below the oral health condition table (so table stays compact)
     var afterOhY = ohY + ohRowH * ohRowsCount;
-    var occY = afterOhY + 4.2;
-    doc.setFontSize(6.8);
+    var occY = afterOhY + 3.6;
+    doc.setFontSize(6.6);
     doc.setFont(undefined, 'bold');
     doc.text('OCCLUSION:', ohX, occY);
     var occ = safeText(a.occlusion);
@@ -432,8 +432,8 @@
     doc.setFontSize(5.6);
     doc.text('LEGEND CONDITION RESTORATIONS AND PROSTHETIC SURGERY', (left + right) / 2, legendY, { align: 'center' });
 
-    var ly = legendY + 3.5;
-    var lh = 3.0;
+    var ly = legendY + 3.4;
+    var lh = 2.9;
     doc.setFontSize(5.6);
 
     function legendItem(x, y, code, text, opts) {
@@ -459,7 +459,7 @@
     }
 
     // Col 1
-    legendItem(col1, ly + 0 * lh, 'V', '- Present Teeth');
+    legendItem(col1, ly + 0 * lh, '/', '- Present Teeth');
     legendItem(col1, ly + 1 * lh, 'D', '- Decayed (Caries ind. for filling)');
     legendItem(col1, ly + 2 * lh, 'M', '- Missing (Due to Caries)');
     legendItem(col1, ly + 3 * lh, 'MO', '- Missing (Due to other causes)');
@@ -488,7 +488,7 @@
     legendItem(col5, ly + 2 * lh, 'X', '- Extraction (due to Caries)');
     legendItem(col5, ly + 3 * lh, 'XO', '- Extraction (due to other causes)');
 
-    var chartY = ly + 28;
+    var chartY = ly + lh * 4 + 2.1;
     doc.setFont(undefined, 'bold');
     doc.setFontSize(8.5);
     doc.text('DENTAL HEALTH STATUS:', left, chartY);
@@ -503,11 +503,12 @@
     }
 
     var boxY = chartY + 2;
-    var startX = left;
-    var cellW = 11.2;
-    var cellH = 7.2;
+    var cellW = 10.0;
+    var cellH = 5.8;
     var cols = 16;
     var rows = 6;
+    var chartW = cellW * cols;
+    var startX = left + ((right - left) - chartW) / 2;
     var teethTop = ['18','17','16','15','14','13','12','11','21','22','23','24','25','26','27','28'];
     var teethBottom = ['48','47','46','45','44','43','42','41','31','32','33','34','35','36','37','38'];
 
@@ -527,19 +528,10 @@
       };
     }
 
-    // Row 0 and row 5: rounded input boxes
-    for (var i = 0; i < cols; i++) {
-      var rx = startX + i * cellW + 1.0;
-      var ryTop = boxY + 0 * cellH + 1.0;
-      var ryBot = boxY + 5 * cellH + 1.0;
-      doc.roundedRect(rx, ryTop, cellW - 2.0, cellH - 2.0, 1.2, 1.2);
-      doc.roundedRect(rx, ryBot, cellW - 2.0, cellH - 2.0, 1.2, 1.2);
-    }
-
     // Row 1 and row 4: target circles
     function drawTarget(col, row) {
       var c = cellCenter(col, row);
-      var r = 2.1;
+      var r = 1.6;
       doc.circle(c.x, c.y, r);
       doc.line(c.x - r, c.y, c.x + r, c.y);
       doc.line(c.x, c.y - r, c.x, c.y + r);
@@ -551,67 +543,162 @@
 
     // Tooth numbers rows
     doc.setFont(undefined, 'bold');
-    doc.setFontSize(9);
+    doc.setFontSize(7.6);
     for (var t1 = 0; t1 < cols; t1++) {
       var cTop = cellCenter(t1, 2);
       var cBot = cellCenter(t1, 3);
-      doc.text(teethTop[t1], cTop.x, cTop.y + 2.2, { align: 'center' });
-      doc.text(teethBottom[t1], cBot.x, cBot.y + 2.2, { align: 'center' });
+      doc.text(teethTop[t1], cTop.x, cTop.y + 1.7, { align: 'center' });
+      doc.text(teethBottom[t1], cBot.x, cBot.y + 1.7, { align: 'center' });
     }
 
     // Codes in rounded boxes (top = upper teeth, bottom = lower teeth)
     doc.setFont(undefined, 'normal');
-    doc.setFontSize(8);
+    doc.setFontSize(7.0);
     for (var t2 = 0; t2 < cols; t2++) {
       var topTooth = teethTop[t2];
       var botTooth = teethBottom[t2];
       var codeTop = safeText(chart[topTooth] || '').toUpperCase();
       var codeBot = safeText(chart[botTooth] || '').toUpperCase();
-      if (codeTop === 'V') codeTop = '✓';
-      if (codeBot === 'V') codeBot = '✓';
+      // Treat common “present” markers as '/'
+      if (codeTop === 'V' || codeTop === '.' || codeTop === '✓' || codeTop === '/') codeTop = '/';
+      if (codeBot === 'V' || codeBot === '.' || codeBot === '✓' || codeBot === '/') codeBot = '/';
       if (codeTop) {
         var ct = cellCenter(t2, 0);
-        doc.text(codeTop, ct.x, ct.y + 2.0, { align: 'center' });
+        doc.text(codeTop, ct.x, ct.y + 1.55, { align: 'center' });
       }
       if (codeBot) {
         var cb = cellCenter(t2, 5);
-        doc.text(codeBot, cb.x, cb.y + 2.0, { align: 'center' });
+        doc.text(codeBot, cb.x, cb.y + 1.55, { align: 'center' });
       }
     }
 
-    var blockY = boxY + cellH * rows + 8;
+    var blockY = boxY + cellH * rows + 5.0;
+
+    // Right-side DMFT table geometry (template style)
+    var dmftW = 70;
+    var dmftBoxX = right - dmftW;
+    var dmftBoxY = blockY;
+
+    // Left-side blocks (Soft tissue + Periodontal)
+    var leftBlockX = left;
+    var leftBlockW = dmftBoxX - left - 4;
+
+    // INITIAL SOFT TISSUE EXAM (bordered row with checkboxes)
+    var softRowH = 6.2;
     doc.setFont(undefined, 'bold');
-    doc.setFontSize(8.5);
-    doc.text('INITIAL SOFT TISSUE EXAM', left, blockY);
-    doc.setFontSize(8);
+    doc.setFontSize(7.2);
+    doc.text('INITIAL SOFT TISSUE EXAM', leftBlockX, blockY);
+
+    var softY = blockY + 1.05;
+    doc.rect(leftBlockX, softY, leftBlockW, softRowH);
     var soft = safeText(a.soft_tissue_exam);
     var softOpts = ['Lips', 'Floor of mouth', 'Palate', 'Tongue', 'Neck & nodes'];
-    var sx = left;
+    doc.setFontSize(6.4);
+    var softItemW = leftBlockW / softOpts.length;
     for (var so = 0; so < softOpts.length; so++) {
-      doc.rect(sx, blockY + 3, 3, 3);
-      checkMark(doc, sx + 0.7, blockY + 5.8, soft === softOpts[so]);
+      var cx = leftBlockX + softItemW * so + 2.0;
+      doc.rect(cx, softY + 2.35, 1.8, 1.8);
+      checkMark(doc, cx + 0.35, softY + 3.85, soft === softOpts[so]);
+      doc.setFont(undefined, 'bold');
+      doc.text(softOpts[so], cx + 3.0, softY + 3.9);
       doc.setFont(undefined, 'normal');
-      doc.text(softOpts[so], sx + 5, blockY + 6);
-      sx += 32;
     }
 
-    var dmftBoxX = right - 55;
-    var dmftBoxY = blockY;
+    // INITIAL PERIODONTAL EXAM (table below)
+    var perioY = softY + softRowH;
+    var perioHeaderH = 4.1;
+    var perioRowH = 3.2;
+    var perioRows = [
+      { label: 'GINGIVAL INFLAMATION:', key: 'perio_gingival_inflammation', opts: ['Slight', 'Moderate', 'Severe'] },
+      { label: 'SOFT PLAQUE BUILDUP:', key: 'perio_soft_plaque', opts: ['Slight', 'Moderate', 'Heavy'] },
+      { label: 'HARD CALC BUILDUP:', key: 'perio_hard_calc', opts: ['Light', 'Moderate', 'Heavy'] },
+      { label: 'STAINS:', key: 'perio_stains', opts: ['Light', 'Moderate', 'Heavy'] },
+      { label: 'HOME CARE EFFECTIVENESS:', key: 'home_care_effectiveness', opts: ['Good', 'Fair', 'Poor'] },
+      { label: 'PERIODONTAL CONDITION:', key: 'periodontal_condition', opts: ['Good', 'Fair', 'Poor'] },
+      { label: 'PERIODONTAL DIAGNOSIS:', key: 'periodontal_diagnosis', opts: ['Normal', 'Gingivitis', ''] },
+      { label: 'PERIODONTITIS:', key: 'periodontitis', opts: ['Early', 'Moderate', 'Advanced'] },
+      { label: 'MUCOGINGIVAL DEFECTS:', key: 'mucogingival_defects', opts: ['', '', ''] },
+    ];
+    var perioH = perioHeaderH + perioRowH * perioRows.length;
+    doc.rect(leftBlockX, perioY, leftBlockW, perioH);
+    // Header
     doc.setFont(undefined, 'bold');
-    doc.text('DMFT SCORES', dmftBoxX + 27.5, dmftBoxY, { align: 'center' });
-    doc.rect(dmftBoxX, dmftBoxY + 2, 55, 32);
-    for (var dl = 1; dl < 6; dl++) {
-      doc.line(dmftBoxX, dmftBoxY + 2 + dl * 5.3, dmftBoxX + 55, dmftBoxY + 2 + dl * 5.3);
+    doc.setFontSize(7.2);
+    doc.text('INITIAL PERIODONTAL EXAM', leftBlockX + leftBlockW / 2, perioY + 3.05, { align: 'center' });
+    doc.line(leftBlockX, perioY + perioHeaderH, leftBlockX + leftBlockW, perioY + perioHeaderH);
+
+    var perioLabelW = 50;
+    var perioSep1 = leftBlockX + perioLabelW;
+    var perioOptW = (leftBlockW - perioLabelW) / 3;
+    // Merge header across all columns: start vertical separators below the header line
+    doc.line(perioSep1, perioY + perioHeaderH, perioSep1, perioY + perioH);
+    doc.line(perioSep1 + perioOptW, perioY + perioHeaderH, perioSep1 + perioOptW, perioY + perioH);
+    doc.line(perioSep1 + perioOptW * 2, perioY + perioHeaderH, perioSep1 + perioOptW * 2, perioY + perioH);
+
+    doc.setFontSize(6.4);
+    for (var pr = 0; pr < perioRows.length; pr++) {
+      var row = perioRows[pr];
+      var y0 = perioY + perioHeaderH + perioRowH * pr;
+      doc.line(leftBlockX, y0 + perioRowH, leftBlockX + leftBlockW, y0 + perioRowH);
+      doc.setFont(undefined, 'bold');
+      doc.text(row.label, leftBlockX + 1.2, y0 + 2.35);
+      doc.setFont(undefined, 'normal');
+
+      var val = safeText(a[row.key]);
+      var v = String(val || '').trim();
+      for (var oi = 0; oi < 3; oi++) {
+        var opt = row.opts[oi] || '';
+        if (!opt) continue;
+        var ox = perioSep1 + perioOptW * oi;
+        var bx = ox + 1.2;
+        doc.rect(bx, y0 + 0.85, 1.5, 1.5);
+        checkMark(doc, bx + 0.28, y0 + 2.35, v.toLowerCase() === opt.toLowerCase());
+        doc.setFont(undefined, 'bold');
+        doc.text(opt, bx + 2.45, y0 + 2.35);
+        doc.setFont(undefined, 'normal');
+      }
+
+      if (row.key === 'mucogingival_defects') {
+        var md = safeText(a.mucogingival_defects);
+        if (md) {
+          doc.text(md, perioSep1 + 1.2, y0 + 2.35);
+        }
+      }
     }
-    doc.line(dmftBoxX + 35, dmftBoxY + 2, dmftBoxX + 35, dmftBoxY + 34);
-    doc.setFontSize(7.3);
-    doc.text('Tooth Count', dmftBoxX + 2, dmftBoxY + 6);
-    doc.text('PERMANENT', dmftBoxX + 36.5, dmftBoxY + 6);
-    doc.text('Number of Teeth Present', dmftBoxX + 2, dmftBoxY + 11.3);
-    doc.text('Number of Caries Free Teeth', dmftBoxX + 2, dmftBoxY + 16.6);
-    doc.text('Number of Decayed Teeth', dmftBoxX + 2, dmftBoxY + 21.9);
-    doc.text('Number of Missing Teeth', dmftBoxX + 2, dmftBoxY + 27.2);
-    doc.text('Number of Filled Teeth', dmftBoxX + 2, dmftBoxY + 32.5);
+
+    // DMFT SCORES (3-column table)
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(7.2);
+    doc.text('DMFT SCORES', dmftBoxX + dmftW / 2, dmftBoxY, { align: 'center' });
+
+    var dmftHeaderH = 4.0;
+    var dmftRowH = 3.2;
+    var dmftFooterH = 3.2;
+    var dmftRows = [
+      'Number of Teeth Present',
+      'Number of Caries Free Teeth',
+      'Number of Decayed Teeth',
+      'Number of Missing Teeth',
+      'Number of Filled Teeth',
+      'Total DMF Teeth',
+    ];
+    var dmftH = dmftHeaderH + dmftRowH * (dmftRows.length + 1) + dmftFooterH;
+    doc.rect(dmftBoxX, dmftBoxY + 2, dmftW, dmftH);
+
+    var c1 = 38;
+    var c2 = 14;
+    var c3 = dmftW - c1 - c2;
+    var dmftX1 = dmftBoxX + c1;
+    var dmftX2 = dmftBoxX + c1 + c2;
+    doc.line(dmftX1, dmftBoxY + 2, dmftX1, dmftBoxY + 2 + dmftH);
+    doc.line(dmftX2, dmftBoxY + 2, dmftX2, dmftBoxY + 2 + dmftH);
+
+    doc.setFontSize(6.4);
+    // Header row
+    doc.text('Tooth Count', dmftBoxX + 1.15, dmftBoxY + 2 + 2.75);
+    doc.text('PERMANENT', dmftX1 + c2 / 2, dmftBoxY + 2 + 2.75, { align: 'center' });
+    doc.text('REMARKS', dmftX2 + c3 / 2, dmftBoxY + 2 + 2.75, { align: 'center' });
+    doc.line(dmftBoxX, dmftBoxY + 2 + dmftHeaderH, dmftBoxX + dmftW, dmftBoxY + 2 + dmftHeaderH);
 
     var dmft = computeDmftFromChart(chart);
     var present = a.teeth_present_count != null ? a.teeth_present_count : dmft.present;
@@ -620,17 +707,29 @@
     var filled = a.f_count != null ? a.f_count : dmft.f;
     var total = a.dmft_total != null ? a.dmft_total : dmft.total;
     var cariesFree = Math.max(0, Number(present || 0) - Number(decayed || 0) - Number(missing || 0) - Number(filled || 0));
-    doc.setFont(undefined, 'normal');
-    doc.setFontSize(8);
-    doc.text(String(present || ''), dmftBoxX + 38, dmftBoxY + 11.3);
-    doc.text(String(cariesFree || ''), dmftBoxX + 38, dmftBoxY + 16.6);
-    doc.text(String(decayed || ''), dmftBoxX + 38, dmftBoxY + 21.9);
-    doc.text(String(missing || ''), dmftBoxX + 38, dmftBoxY + 27.2);
-    doc.text(String(filled || ''), dmftBoxX + 38, dmftBoxY + 32.5);
+    var dmftVals = [present, cariesFree, decayed, missing, filled, total];
 
-    var recY = dmftBoxY + 44;
+    doc.setFont(undefined, 'normal');
+    for (var di = 0; di < dmftRows.length; di++) {
+      var yRow = dmftBoxY + 2 + dmftHeaderH + dmftRowH * (di + 1);
+      doc.line(dmftBoxX, yRow, dmftBoxX + dmftW, yRow);
+      doc.text(dmftRows[di], dmftBoxX + 1.15, yRow - 0.88);
+      doc.text(String(dmftVals[di] != null ? dmftVals[di] : ''), dmftX1 + c2 / 2, yRow - 0.88, { align: 'center' });
+    }
+
+    // Footer
+    var footerY = dmftBoxY + 2 + dmftHeaderH + dmftRowH * (dmftRows.length + 1);
+    doc.line(dmftBoxX, footerY, dmftBoxX + dmftW, footerY);
     doc.setFont(undefined, 'bold');
-    doc.setFontSize(8.5);
+    doc.setFontSize(6.6);
+    doc.text('DMFT SCORES', dmftBoxX + 1.15, footerY + 2.25);
+
+    // Continue below the taller of the two blocks
+    var afterBlocksY = Math.max(perioY + perioH, dmftBoxY + 2 + dmftH) + 6;
+
+    var recY = afterBlocksY;
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(6.6);
     doc.text('DENTAL/ORAL EXAMINATION REVEALED THE FOLLOWING CONDITIONS AND RECOMMENDATIONS', pageWidth / 2, recY, { align: 'center' });
 
     var recs = [];
@@ -644,8 +743,9 @@
       return Array.isArray(recs) && recs.indexOf(label) >= 0;
     }
 
-    doc.setFontSize(8);
-    var recLeftY = recY + 8;
+    doc.setFontSize(5.8);
+    var recRowStep = 3.2;
+    var recLeftY = recY + 4.6;
     var colA = left;
     var colB = left + 70;
     var colC = left + 140;
@@ -660,55 +760,122 @@
         if (label !== 'Others (Specify)') {
           if (hasRec(label)) {
             doc.setFont(undefined, 'bold');
-            doc.text('/', x + 4.5, yy);
+            doc.text('/', x + 4.0, yy);
             doc.setFont(undefined, 'normal');
           }
           doc.setFont(undefined, 'bold');
-          doc.text(label, x + 10, yy);
+          doc.text(label, x + 8.4, yy);
           doc.setFont(undefined, 'normal');
         } else {
           var otherText = safeText(a.recommendation_others);
           doc.setFont(undefined, 'bold');
-          doc.text('Others (Specify):', x + 10, yy);
+          doc.text('Others (Specify):', x + 8.4, yy);
           doc.setFont(undefined, 'normal');
-          doc.line(x + 40, yy + 1.1, x + 65, yy + 1.1);
-          doc.text(otherText, x + 40, yy);
+          var otherY = yy + 3.5;
+          var otherX = x + 8.4;
+          doc.line(otherX, otherY + 0.8, x + 40, otherY + 0.8);
+          doc.text(otherText, otherX, otherY);
         }
-        yy += 5.2;
+        yy += (label === 'Others (Specify)') ? (recRowStep + 4.4) : recRowStep;
       }
     }
     drawRecCol(recItemsA, colA, recLeftY);
     drawRecCol(recItemsB, colB, recLeftY);
     drawRecCol(recItemsC, colC, recLeftY);
 
-    var sigY = recLeftY + 26;
-    doc.setFont(undefined, 'normal');
-    doc.line(left + 115, sigY, right - 60, sigY);
-    doc.setFontSize(7.8);
-    doc.text('Dentist signature over printed name', left + 125, sigY + 4);
-    doc.line(left + 115, sigY + 10, right - 60, sigY + 10);
-    doc.text('License #:', left + 117, sigY + 14);
+    var recMaxRows = Math.max(recItemsA.length, recItemsB.length, recItemsC.length);
+    var recEndY = recLeftY + recRowStep * recMaxRows + 3.0;
 
-    var consentY = sigY + 18;
+    // Anchor the patient's signature above the footer (to match original and avoid footer overlap)
+    var footerSafeY = pageHeight - shared.footerH - 6.0;
+    var psLineY = footerSafeY - 2.0;
+    doc.setFont(undefined, 'normal');
+    doc.line(pageWidth / 2 - 55, psLineY, pageWidth / 2 + 55, psLineY);
+    doc.setFontSize(6.6);
+    doc.text("Patient's Signature over Printed Name", pageWidth / 2, psLineY + 3.0, { align: 'center' });
+
+    // Informed consent block goes above the patient's signature
+    // IMPORTANT: derive height from wrapped line count so the signatory clamp stays stable
+    var consentTitleGap = 3.4;
+    var consentLineStep = 3.2;
+    var consentBottomGap = 3.0;
+    var consentText =
+      'I, ________________________________, DO HEREBY CONSENT TO THE PERFORMANCE UPON MYSELF OF ' +
+      'DENTAL PROCEDURES, WHETHER RESTORATIONS/ EXTRACTION OF TEETH OR ANY OTHER TREATMENT DEEMED NECESSARY TO RESTORE MY ' +
+      'DENTAL HEALTH IN FAVOR OF THE ATTENDING DENTIST.';
+    // Wrap so it never runs under the signatory block on the right
+    var consentMaxW = (left + 140) - left - 4;
+    var consentLines = typeof doc.splitTextToSize === 'function' ? doc.splitTextToSize(consentText, consentMaxW) : [consentText];
+    var consentBlockH = consentTitleGap + consentLineStep * consentLines.length;
+    // Lowest (closest to footer) we can place the consent block without hitting the patient signature
+    var consentYMax = psLineY - consentBlockH - consentBottomGap;
+
+    // Dentist signature / license sits between recommendations and informed consent
+    // Keep its position stable (anchored under recommendations). If space is tight,
+    // shift it upward only as much as needed so consent still fits above the patient signature.
+    var sigGapToConsent = 1.6;
+    var minSigY = recEndY + 2.0;
+    var sigY = recEndY + 5.0;
+    if (sigY < minSigY) sigY = minSigY;
+
+    // Keep this block away from the logo on the far right
+    var sigX = left + 122;
+    var sigEndX = right - 30;
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(6.0);
+
+    function sigBlockBottomAt(y) {
+      var sigLineY0 = y;
+      var licLineY0 = sigLineY0 + 5.2;
+      return licLineY0 + 2.5;
+    }
+
+    // Consent must start below signature block, and end above patient signature
+    var sigBlockBottomY = sigBlockBottomAt(sigY);
+    var consentY = sigBlockBottomY + sigGapToConsent;
+    var consentYMaxAllowed = consentYMax;
+    if (consentY > consentYMaxAllowed) {
+      var overflow = consentY - consentYMaxAllowed;
+      sigY -= overflow;
+      if (sigY < minSigY) sigY = minSigY;
+      sigBlockBottomY = sigBlockBottomAt(sigY);
+      consentY = sigBlockBottomY + sigGapToConsent;
+    }
+
+    // Draw signatory block at final position
+    var sigLineY = sigY;
+    doc.line(sigX, sigLineY, sigEndX, sigLineY);
+    doc.text('Dentist signature over printed name', sigX, sigLineY + 2.5);
+    var licLineY = sigLineY + 5.2;
+    var licLabel = 'License #:';
+    var licLabelW = 0;
+    try {
+      if (typeof doc.getTextWidth === 'function') licLabelW = doc.getTextWidth(licLabel);
+    } catch (e) {
+      licLabelW = 0;
+    }
+    if (!licLabelW) licLabelW = licLabel.length * 1.6;
+
+    // Same-row layout:  License #: _______________________
+    var licTextY = licLineY - 0.4;
+    doc.text(licLabel, sigX, licTextY);
+    var licLineStartX = sigX + licLabelW + 0.8;
+    if (licLineStartX > sigEndX - 10) licLineStartX = sigX + 30;
+    doc.line(licLineStartX, licLineY, sigEndX, licLineY);
+
+    // Draw consent below signatory
     doc.setFont(undefined, 'bold');
-    doc.setFontSize(8.5);
+    doc.setFontSize(7.0);
     doc.text('INFORMED CONSENT:', left, consentY);
     doc.setFont(undefined, 'normal');
-    doc.setFontSize(7.6);
-    doc.text('I, ________________________________, DO HEREBY CONSENT TO THE PERFORMANCE UPON MYSELF OF', left, consentY + 6);
-    doc.text('DENTAL PROCEDURES, WHETHER RESTORATIONS/ EXTRACTION OF TEETH OR ANY OTHER TREATMENT DEEMED NECESSARY TO RESTORE MY', left, consentY + 11);
-    doc.text('DENTAL HEALTH IN FAVOR OF THE ATTENDING DENTIST.', left, consentY + 16);
-
-    var psY = pageHeight - shared.footerH - 12;
-    doc.line(pageWidth / 2 - 50, psY, pageWidth / 2 + 50, psY);
-    doc.setFontSize(8);
-    doc.text("Patient's Signature over Printed Name", pageWidth / 2, psY + 4, { align: 'center' });
+    doc.setFontSize(6.0);
+    doc.text(consentLines, left, consentY + consentTitleGap);
 
     if (assets.ape2DataUrl) {
-      var logoW = 34;
-      var logoH = assets.ape2Aspect ? (logoW / assets.ape2Aspect) : 18;
+      var logoW = 26;
+      var logoH = assets.ape2Aspect ? (logoW / assets.ape2Aspect) : 14;
       var logoX = right - logoW;
-      var logoY = pageHeight - shared.footerH - 8 - logoH;
+      var logoY = pageHeight - shared.footerH - 4 - logoH;
       doc.addImage(assets.ape2DataUrl, 'PNG', logoX, logoY, logoW, logoH);
     }
   }
