@@ -109,7 +109,7 @@ $flashError = get_flash('error');
                 <th>School</th>
                 <th style="width: 160px;">Medical</th>
                 <th style="width: 160px;">Dental</th>
-                <th style="width: 200px;">Actions</th>
+                <th style="width: 260px;">Actions</th>
               </tr>
             </thead>
             <tbody id="patientsBody">
@@ -166,9 +166,10 @@ $flashError = get_flash('error');
                 '<td>' + med + '</td>' +
                 '<td>' + dent + '</td>' +
                 '<td>' +
-                  '<div class="d-flex flex-wrap gap-2">' +
+                  '<div class="d-flex flex-nowrap gap-2">' +
                     '<a class="btn btn-sm btn-primary" href="assess.php?id=' + id + '">' + (medChecked ? 'View' : 'Assess') + '</a>' +
-                    '<form method="post" action="remove.php" onsubmit="return confirm(\'Remove this patient entry?\');">' +
+                    '<button class="btn btn-sm btn-outline-secondary" type="button" onclick="window.sdoGenerateBlankPdf && window.sdoGenerateBlankPdf({ type: \'medical\', patientId: ' + id + ', title: \'Medical Form\' });">PDF</button>' +
+                    '<form class="m-0 d-inline" method="post" action="remove.php" onsubmit="return confirm(\'Remove this patient entry?\');">' +
                       '<input type="hidden" name="id" value="' + id + '">' +
                       '<button class="btn btn-sm btn-outline-danger" type="submit">Remove</button>' +
                     '</form>' +
@@ -206,6 +207,22 @@ $flashError = get_flash('error');
     </script>
   </main>
 
+  <!-- jsPDF must load before blank-pdf.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script>
+    window.SDO_MDD_PDF_ASSETS = {
+      headerUrl: <?= json_encode(asset('public/assets/header.jpg'), JSON_UNESCAPED_SLASHES) ?>,
+      footerUrl: <?= json_encode(asset('public/assets/footer.jpg'), JSON_UNESCAPED_SLASHES) ?>,
+      likertUrl: <?= json_encode(asset('public/assets/likertScale.png'), JSON_UNESCAPED_SLASHES) ?>,
+      likert2Url: <?= json_encode(asset('public/assets/likertScale2.png'), JSON_UNESCAPED_SLASHES) ?>,
+      ape1LogoUrl: <?= json_encode(asset('public/assets/ape1-logo.png'), JSON_UNESCAPED_SLASHES) ?>,
+      ape2LogoUrl: <?= json_encode(asset('public/assets/ape2-logo.png'), JSON_UNESCAPED_SLASHES) ?>,
+    };
+    window.SDO_MDD_PDF_API = {
+      pdfUrl: <?= json_encode(url('/api/pdf.php'), JSON_UNESCAPED_SLASHES) ?>,
+    };
+  </script>
+  <script src="<?= e(asset('public/assets/js/blank-pdf.js')) ?>"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     (function(){
