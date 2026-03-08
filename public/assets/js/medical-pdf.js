@@ -993,6 +993,18 @@
     var patientId = options.patientId;
     var title = safeText(options.title || (type === 'medical' ? 'Medical Form' : 'Dental Form'));
 
+    var jsPDFCtor = null;
+    if (typeof window.jsPDF === 'function') {
+      jsPDFCtor = window.jsPDF;
+    } else if (window.jspdf && typeof window.jspdf.jsPDF === 'function') {
+      jsPDFCtor = window.jspdf.jsPDF;
+    }
+
+    if (!jsPDFCtor) {
+      alert('jsPDF is not loaded.');
+      return;
+    }
+
     var assets = window.SDO_MDD_PDF_ASSETS || {};
     var headerUrl = safeText(assets.headerUrl);
     var footerUrl = safeText(assets.footerUrl);
@@ -1040,7 +1052,7 @@
       return;
     }
 
-    var doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+    var doc = new jsPDFCtor({ unit: 'mm', format: 'a4', orientation: 'portrait' });
     var pageWidth = doc.internal.pageSize.getWidth();
     var pageHeight = doc.internal.pageSize.getHeight();
 

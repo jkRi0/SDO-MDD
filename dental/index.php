@@ -168,7 +168,7 @@ $flashError = get_flash('error');
                 '<td>' +
                   '<div class="d-flex flex-nowrap gap-2">' +
                     '<a class="btn btn-sm btn-primary" href="assess.php?id=' + id + '">' + (dentChecked ? 'View' : 'Assess') + '</a>' +
-                    '<button class="btn btn-sm btn-outline-secondary" type="button" onclick="window.sdoGenerateBlankPdf && window.sdoGenerateBlankPdf({ type: \'dental\', patientId: ' + id + ', title: \'Dental Form\' });">PDF</button>' +
+                    '<button class="btn btn-sm btn-outline-secondary" type="button" onclick="window.sdoGenerateDentalPdf && window.sdoGenerateDentalPdf({ patientId: ' + id + ' });">PDF</button>' +
                     '<form class="m-0 d-inline" method="post" action="remove.php" onsubmit="return confirm(\'Remove this patient entry?\');">' +
                       '<input type="hidden" name="id" value="' + id + '">' +
                       '<button class="btn btn-sm btn-outline-danger" type="submit">Remove</button>' +
@@ -222,7 +222,7 @@ $flashError = get_flash('error');
       pdfUrl: <?= json_encode(url('/api/pdf.php'), JSON_UNESCAPED_SLASHES) ?>,
     };
   </script>
-  <script src="<?= e(asset('public/assets/js/blank-pdf.js')) ?>"></script>
+  <script src="<?= e(asset('public/assets/js/dental-pdf.js')) ?>"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     (function(){

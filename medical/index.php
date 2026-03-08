@@ -222,7 +222,7 @@ $flashError = get_flash('error');
       pdfUrl: <?= json_encode(url('/api/pdf.php'), JSON_UNESCAPED_SLASHES) ?>,
     };
   </script>
-  <script src="<?= e(asset('public/assets/js/blank-pdf.js')) ?>"></script>
+  <script src="<?= e(asset('public/assets/js/medical-pdf.js')) ?>"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     (function(){
