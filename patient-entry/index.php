@@ -516,7 +516,7 @@ $schoolsForLevel = match ($postedLevel) {
 
             <div class="col-12 col-md-4">
               <label class="form-label">District</label>
-              <input class="form-control" name="district" value="<?= e((string)($_POST['district'] ?? '')) ?>">
+              <input class="form-control" name="district" id="districtInput" value="<?= e((string)($_POST['district'] ?? '')) ?>">
             </div>
 
             <div class="col-12">
@@ -590,6 +590,90 @@ $schoolsForLevel = match ($postedLevel) {
         });
 
         refresh();
+      })();
+    </script>
+
+    <script>
+      (function(){
+        var schoolEl = document.getElementById('schoolSelect');
+        var districtEl = document.getElementById('districtInput') || document.querySelector('input[name="district"]');
+        if (!schoolEl || !districtEl) return;
+
+        function norm(s){
+          return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+        }
+
+        var pairs = [
+          // District 1
+          ['Banlic Elementary School', 'District 1'],
+          ['Pulo Senior High School', 'District 1'],
+          ['Pulo Elementary School', 'District 1'],
+          ['San Isidro Elementary School', 'District 1'],
+          ['Mamatid Elementary School', 'District 1'],
+          ['Banay Banay Elementary School', 'District 1'],
+          ['Banay-Banay Elementary School', 'District 1'],
+
+          // District 2
+          ['Baclaran Elementary School', 'District 2'],
+          ['Mamatid National High School', 'District 2'],
+          ['Mamatid Senior High School', 'District 2'],
+          ['Mamatid Senior High School Stand Alone', 'District 2'],
+          ['Gulod Elementary School', 'District 2'],
+          ['Gulod National High School', 'District 2'],
+          ['Marinig South Elementary School', 'District 2'],
+
+          // District 3
+          ['Southville I Elementary School', 'District 3'],
+          ['Southville 1 Elementary School', 'District 3'],
+          ['Southville I Integrated National High School', 'District 3'],
+          ['Southville 1 Integrated National High School', 'District 3'],
+          ['North Marinig Elementary School', 'District 3'],
+          ['Marinig National High School', 'District 3'],
+          ['Butong Elementary School', 'District 3'],
+
+          // District 4
+          ['Cabuyao Central School', 'District 4'],
+          ['Bigaa Integrated National High School', 'District 4'],
+          ['Bigaa Elementary School', 'District 4'],
+          ['Cabuyao Integrated National High School', 'District 4'],
+          ['Sala Elementary School', 'District 4'],
+          ['Niugan Elementary School', 'District 4'],
+
+          // District 5
+          ['Casile Integrated National High School', 'District 5'],
+          ['Pulo National High School', 'District 5'],
+          ['Guinding Elementary School', 'District 5'],
+          ['Guinting Elementary School', 'District 5'],
+          ['Pittland Elementary School', 'District 5'],
+          ['Pittland Integrated School', 'District 5'],
+          ['Diezmo Integrated School', 'District 5'],
+          ['Diezmo Integrated School (Elem & JHS)', 'District 5'],
+          ['Casile Elementary School', 'District 5'],
+        ];
+
+        var map = {};
+        for (var i = 0; i < pairs.length; i++) {
+          map[norm(pairs[i][0])] = pairs[i][1];
+        }
+
+        var userEdited = false;
+        districtEl.addEventListener('input', function(){ userEdited = true; });
+
+        function applyDistrict(){
+          var school = schoolEl.value;
+          if (!school) return;
+          var d = map[norm(school)] || '';
+          if (!d) return;
+          if (userEdited && districtEl.value) return;
+          districtEl.value = d;
+        }
+
+        schoolEl.addEventListener('change', function(){
+          userEdited = false;
+          applyDistrict();
+        });
+
+        applyDistrict();
       })();
     </script>
 

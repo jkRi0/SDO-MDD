@@ -28,6 +28,58 @@ if (!$patient) {
     redirect('/dental/index.php');
 }
 
+$elementarySchools = [
+    'Baclaran Elementary School',
+    'Banay-Banay Elementary School',
+    'Banlic Elementary School',
+    'Bigaa Elementary School',
+    'Butong Elementary School',
+    'Cabuyao Central School',
+    'Casile Elementary School',
+    'Diezmo Integrated School (Elem & JHS)',
+    'Guinting Elementary School',
+    'Gulod Elementary School',
+    'Mamatid Elementary School',
+    'Marinig South Elementary School',
+    'Niugan Elementary School',
+    'North Marinig Elementary School',
+    'Pittland Integrated School',
+    'Pulo Elementary School',
+    'Sala Elementary School',
+    'San Isidro Elementary School',
+    'Southville Elementary School',
+    '',
+];
+
+$secondarySchools = [
+    'Bigaa Integrated National High School',
+    'Cabuyao Integrated National High School',
+    'Casile Integrated National High School',
+    'Gulod National High School',
+    'Mamatid National High School',
+    'Mamatid Senior High School Stand Alone',
+    'Marinig National High School',
+    'Pulo National High School',
+    'Pulo Senior High School',
+    'Southville 1 Integrated National High School',
+];
+
+$divisionLevel = 'DepEd City Schools Division of Cabuyao';
+$validLevels = ['Elementary', 'Secondary', $divisionLevel];
+
+$postedLevel = (string)($patient['level'] ?? '');
+if ($postedLevel === '' || !in_array($postedLevel, $validLevels, true)) $postedLevel = 'Elementary';
+$schoolsForLevel = match ($postedLevel) {
+    'Secondary' => $secondarySchools,
+    $divisionLevel => [],
+    default => $elementarySchools,
+};
+
+$storedSchool = (string)($patient['school'] ?? '');
+if ($storedSchool !== '' && $postedLevel !== $divisionLevel && !in_array($storedSchool, $schoolsForLevel, true)) {
+    $schoolsForLevel[] = $storedSchool;
+}
+
 $allowedToothCodes = [
     '✓',
     'D',
@@ -375,6 +427,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'license_no' => trim((string)($_POST['license_no'] ?? '')),
     ];
 
+    if ($p['level'] === '' || !in_array($p['level'], $validLevels, true)) {
+        $errors[] = 'Invalid level.';
+    }
+
+    if (!$errors) {
+        if ($p['level'] !== $divisionLevel) {
+            $validSchoolList = $p['level'] === 'Secondary' ? $secondarySchools : $elementarySchools;
+            if ($p['school'] === '' || !in_array($p['school'], $validSchoolList, true)) {
+                $errors[] = 'Please select a valid school.';
+            }
+        } else {
+            $p['school'] = 'N/A';
+        }
+    }
+
     if ($p['fullname'] === '') $errors[] = 'Fullname is required.';
     if ($p['age'] === '') $errors[] = 'Age is required.';
     if ($p['sex'] === '') $errors[] = 'Sex is required.';
@@ -641,11 +708,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="row g-3">
               <div class="col-12 col-md-4">
                 <label class="form-label">Level</label>
-                <input class="form-control" name="level" value="<?= e((string)$patient['level']) ?>" required>
+                <select class="form-select" name="level" id="levelSelect" required>
+                  <option value="Elementary" <?= $postedLevel === 'Elementary' ? 'selected' : '' ?>>Elementary</option>
+                  <option value="Secondary" <?= $postedLevel === 'Secondary' ? 'selected' : '' ?>>Secondary</option>
+                  <option value="<?= e($divisionLevel) ?>" <?= $postedLevel === $divisionLevel ? 'selected' : '' ?>><?= e($divisionLevel) ?></option>
+                </select>
               </div>
-              <div class="col-12 col-md-8">
+              <div class="col-12 col-md-8" id="schoolGroup">
                 <label class="form-label">School</label>
-                <input class="form-control" name="school" value="<?= e((string)$patient['school']) ?>" required>
+                <select class="form-select" name="school" id="schoolSelect" <?= $postedLevel === $divisionLevel ? '' : 'required' ?> <?= $postedLevel === $divisionLevel ? 'disabled' : '' ?>>
+                  <?php if ($postedLevel === $divisionLevel): ?>
+                    <option value="">Not applicable</option>
+                  <?php else: ?>
+                    <option value="">Select school</option>
+                    <?php foreach ($schoolsForLevel as $s): if ($s === '') continue; ?>
+                      <option value="<?= e($s) ?>" <?= ((string)($patient['school'] ?? '') === $s) ? 'selected' : '' ?>><?= e($s) ?></option>
+                    <?php endforeach; ?>
+                  <?php endif; ?>
+                </select>
+                <div class="form-text" id="schoolHelp" style="display: <?= $postedLevel === $divisionLevel ? 'block' : 'none' ?>;">Not applicable for division-level entry.</div>
               </div>
 
               <div class="col-12 col-md-4">
@@ -718,7 +799,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               </div>
               <div class="col-12 col-md-4">
                 <label class="form-label">District</label>
-                <input class="form-control" name="district" value="<?= e((string)($patient['district'] ?? '')) ?>">
+                <input class="form-control" name="district" id="districtInput" value="<?= e((string)($patient['district'] ?? '')) ?>">
               </div>
 
               <div class="col-12">
@@ -1237,6 +1318,149 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (e.target === input || menu.contains(e.target)) return;
         closeMenu();
       });
+    })();
+  </script>
+
+  <script>
+    (function(){
+      var elementary = <?= json_encode($elementarySchools, JSON_UNESCAPED_UNICODE) ?>;
+      var secondary = <?= json_encode($secondarySchools, JSON_UNESCAPED_UNICODE) ?>;
+      var divisionLevel = <?= json_encode($divisionLevel, JSON_UNESCAPED_UNICODE) ?>;
+      var levelEl = document.getElementById('levelSelect');
+      var schoolEl = document.getElementById('schoolSelect');
+      var schoolGroup = document.getElementById('schoolGroup');
+      var schoolHelp = document.getElementById('schoolHelp');
+      if (!levelEl || !schoolEl) return;
+
+      function setOptions(items){
+        var first = schoolEl.value;
+        schoolEl.innerHTML = '';
+        var opt0 = document.createElement('option');
+        opt0.value = '';
+        opt0.textContent = 'Select school';
+        schoolEl.appendChild(opt0);
+        items.forEach(function(name){
+          if (!name) return;
+          var opt = document.createElement('option');
+          opt.value = name;
+          opt.textContent = name;
+          schoolEl.appendChild(opt);
+        });
+        if (first && items.indexOf(first) !== -1) {
+          schoolEl.value = first;
+        }
+      }
+
+      function refresh(){
+        if (levelEl.value === divisionLevel) {
+          schoolEl.required = false;
+          schoolEl.disabled = true;
+          if (schoolGroup) schoolGroup.style.opacity = '0.65';
+          if (schoolHelp) schoolHelp.style.display = 'block';
+          schoolEl.innerHTML = '';
+          var opt = document.createElement('option');
+          opt.value = '';
+          opt.textContent = 'Not applicable';
+          schoolEl.appendChild(opt);
+          schoolEl.value = '';
+          return;
+        }
+
+        schoolEl.disabled = false;
+        schoolEl.required = true;
+        if (schoolGroup) schoolGroup.style.opacity = '';
+        if (schoolHelp) schoolHelp.style.display = 'none';
+        setOptions(levelEl.value === 'Secondary' ? secondary : elementary);
+      }
+
+      levelEl.addEventListener('change', function(){
+        schoolEl.value = '';
+        refresh();
+      });
+    })();
+  </script>
+
+  <script>
+    (function(){
+      var schoolEl = document.getElementById('schoolSelect');
+      var districtEl = document.getElementById('districtInput') || document.querySelector('input[name="district"]');
+      if (!schoolEl || !districtEl) return;
+
+      function norm(s){
+        return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+      }
+
+      var pairs = [
+        // District 1
+        ['Banlic Elementary School', 'District 1'],
+        ['Pulo Senior High School', 'District 1'],
+        ['Pulo Elementary School', 'District 1'],
+        ['San Isidro Elementary School', 'District 1'],
+        ['Mamatid Elementary School', 'District 1'],
+        ['Banay Banay Elementary School', 'District 1'],
+        ['Banay-Banay Elementary School', 'District 1'],
+
+        // District 2
+        ['Baclaran Elementary School', 'District 2'],
+        ['Mamatid National High School', 'District 2'],
+        ['Mamatid Senior High School', 'District 2'],
+        ['Mamatid Senior High School Stand Alone', 'District 2'],
+        ['Gulod Elementary School', 'District 2'],
+        ['Gulod National High School', 'District 2'],
+        ['Marinig South Elementary School', 'District 2'],
+
+        // District 3
+        ['Southville I Elementary School', 'District 3'],
+        ['Southville 1 Elementary School', 'District 3'],
+        ['Southville I Integrated National High School', 'District 3'],
+        ['Southville 1 Integrated National High School', 'District 3'],
+        ['North Marinig Elementary School', 'District 3'],
+        ['Marinig National High School', 'District 3'],
+        ['Butong Elementary School', 'District 3'],
+
+        // District 4
+        ['Cabuyao Central School', 'District 4'],
+        ['Bigaa Integrated National High School', 'District 4'],
+        ['Bigaa Elementary School', 'District 4'],
+        ['Cabuyao Integrated National High School', 'District 4'],
+        ['Sala Elementary School', 'District 4'],
+        ['Niugan Elementary School', 'District 4'],
+
+        // District 5
+        ['Casile Integrated National High School', 'District 5'],
+        ['Pulo National High School', 'District 5'],
+        ['Guinding Elementary School', 'District 5'],
+        ['Guinting Elementary School', 'District 5'],
+        ['Pittland Elementary School', 'District 5'],
+        ['Pittland Integrated School', 'District 5'],
+        ['Diezmo Integrated School', 'District 5'],
+        ['Diezmo Integrated School (Elem & JHS)', 'District 5'],
+        ['Casile Elementary School', 'District 5'],
+      ];
+
+      var map = {};
+      for (var i = 0; i < pairs.length; i++) {
+        map[norm(pairs[i][0])] = pairs[i][1];
+      }
+
+      var userEdited = false;
+      districtEl.addEventListener('input', function(){ userEdited = true; });
+
+      function applyDistrict(){
+        var school = schoolEl.value;
+        if (!school) return;
+        var d = map[norm(school)] || '';
+        if (!d) return;
+        if (userEdited && districtEl.value) return;
+        districtEl.value = d;
+      }
+
+      schoolEl.addEventListener('change', function(){
+        userEdited = false;
+        applyDistrict();
+      });
+
+      applyDistrict();
     })();
   </script>
 </body>

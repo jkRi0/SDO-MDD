@@ -28,6 +28,58 @@ if (!$patient) {
     redirect('/medical/index.php');
 }
 
+$elementarySchools = [
+    'Baclaran Elementary School',
+    'Banay-Banay Elementary School',
+    'Banlic Elementary School',
+    'Bigaa Elementary School',
+    'Butong Elementary School',
+    'Cabuyao Central School',
+    'Casile Elementary School',
+    'Diezmo Integrated School (Elem & JHS)',
+    'Guinting Elementary School',
+    'Gulod Elementary School',
+    'Mamatid Elementary School',
+    'Marinig South Elementary School',
+    'Niugan Elementary School',
+    'North Marinig Elementary School',
+    'Pittland Integrated School',
+    'Pulo Elementary School',
+    'Sala Elementary School',
+    'San Isidro Elementary School',
+    'Southville Elementary School',
+    '',
+];
+
+$secondarySchools = [
+    'Bigaa Integrated National High School',
+    'Cabuyao Integrated National High School',
+    'Casile Integrated National High School',
+    'Gulod National High School',
+    'Mamatid National High School',
+    'Mamatid Senior High School Stand Alone',
+    'Marinig National High School',
+    'Pulo National High School',
+    'Pulo Senior High School',
+    'Southville 1 Integrated National High School',
+];
+
+$divisionLevel = 'DepEd City Schools Division of Cabuyao';
+$validLevels = ['Elementary', 'Secondary', $divisionLevel];
+
+$postedLevel = (string)($patient['level'] ?? '');
+if ($postedLevel === '' || !in_array($postedLevel, $validLevels, true)) $postedLevel = 'Elementary';
+$schoolsForLevel = match ($postedLevel) {
+    'Secondary' => $secondarySchools,
+    $divisionLevel => [],
+    default => $elementarySchools,
+};
+
+$storedSchool = (string)($patient['school'] ?? '');
+if ($storedSchool !== '' && $postedLevel !== $divisionLevel && !in_array($storedSchool, $schoolsForLevel, true)) {
+    $schoolsForLevel[] = $storedSchool;
+}
+
 $defaults = [
     'height_cm' => '',
     'height_unit' => 'cm',
@@ -42,6 +94,7 @@ $defaults = [
     'bp_systolic' => '',
     'bp_diastolic' => '',
     'pmh' => [],
+    'pmh_allergies' => '',
     'pmh_cancer_type' => '',
     'pmh_operation' => '',
     'pmh_confinement' => '',
@@ -97,6 +150,7 @@ try {
         $defaults['coping_level'] = $last['coping_level'] === null ? '' : (string)$last['coping_level'];
 
         $pmh = [];
+        $pmhAllergies = '';
         $pmhCancer = '';
         $pmhOp = '';
         $pmhCon = '';
@@ -106,6 +160,7 @@ try {
             $decoded = json_decode($rawPmh, true);
             if (is_array($decoded)) {
                 $pmh = isset($decoded['checked']) && is_array($decoded['checked']) ? $decoded['checked'] : [];
+                $pmhAllergies = is_string($decoded['allergies'] ?? null) ? $decoded['allergies'] : '';
                 $pmhCancer = is_string($decoded['cancer_type'] ?? null) ? $decoded['cancer_type'] : '';
                 $pmhOp = is_string($decoded['operation'] ?? null) ? $decoded['operation'] : '';
                 $pmhCon = is_string($decoded['confinement'] ?? null) ? $decoded['confinement'] : '';
@@ -114,6 +169,7 @@ try {
         }
 
         $defaults['pmh'] = array_values(array_filter($pmh, fn($v) => is_string($v) && $v !== ''));
+        $defaults['pmh_allergies'] = $pmhAllergies;
         $defaults['pmh_cancer_type'] = $pmhCancer;
         $defaults['pmh_operation'] = $pmhOp;
         $defaults['pmh_confinement'] = $pmhCon;
@@ -126,7 +182,6 @@ $pmhOptions = [
     'DM' => 'DM',
     'HPN' => 'HPN',
     'Asthma' => 'Asthma',
-    'Allergies' => 'Allergies',
     'Heart Dse.' => 'Heart Dse.',
     'Lung Dse.' => 'Lung Dse.',
     'Kidney Dse.' => 'Kidney Dse.',
@@ -136,6 +191,7 @@ $pmhOptions = [
 
 $pmhSpecialOptions = [
     'Cancer' => 'Cancer/Type',
+    'Allergies' => 'Allergies',
     'Operation' => 'Operation',
     'Confinement' => 'Confinement',
 ];
@@ -300,6 +356,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'hmo_provider' => trim((string)($_POST['hmo_provider'] ?? '')),
     ];
 
+    if ($p['level'] === '' || !in_array($p['level'], $validLevels, true)) {
+        $errors[] = 'Invalid level.';
+    }
+
+    if (!$errors) {
+        if ($p['level'] !== $divisionLevel) {
+            $validSchoolList = $p['level'] === 'Secondary' ? $secondarySchools : $elementarySchools;
+            if ($p['school'] === '' || !in_array($p['school'], $validSchoolList, true)) {
+                $errors[] = 'Please select a valid school.';
+            }
+        } else {
+            $p['school'] = 'N/A';
+        }
+    }
+
     $a = [
         'height_cm' => trim((string)($_POST['height_cm'] ?? '')),
         'height_unit' => trim((string)($_POST['height_unit'] ?? 'cm')),
@@ -314,6 +385,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'bp_systolic' => trim((string)($_POST['bp_systolic'] ?? '')),
         'bp_diastolic' => trim((string)($_POST['bp_diastolic'] ?? '')),
         'pmh' => (array)($_POST['pmh'] ?? []),
+        'pmh_allergies' => trim((string)($_POST['pmh_allergies'] ?? '')),
         'pmh_cancer_type' => trim((string)($_POST['pmh_cancer_type'] ?? '')),
         'pmh_operation' => trim((string)($_POST['pmh_operation'] ?? '')),
         'pmh_confinement' => trim((string)($_POST['pmh_confinement'] ?? '')),
@@ -416,6 +488,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (in_array('Cancer', $a['pmh'], true) && $a['pmh_cancer_type'] === '') {
         $errors[] = 'Cancer type is required.';
     }
+    if (in_array('Allergies', $a['pmh'], true) && $a['pmh_allergies'] === '') {
+        $errors[] = 'Allergies is required.';
+    }
     if (in_array('Operation', $a['pmh'], true) && $a['pmh_operation'] === '') {
         $errors[] = 'Operation is required.';
     }
@@ -463,6 +538,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $pmhPayload = [
                 'checked' => $a['pmh'],
+                'allergies' => $a['pmh_allergies'],
                 'cancer_type' => $a['pmh_cancer_type'],
                 'operation' => $a['pmh_operation'],
                 'confinement' => $a['pmh_confinement'],
@@ -587,11 +663,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="row g-3">
               <div class="col-12 col-md-4">
                 <label class="form-label">Level</label>
-                <input class="form-control" name="level" value="<?= e((string)$patient['level']) ?>" required>
+                <select class="form-select" name="level" id="levelSelect" required>
+                  <option value="Elementary" <?= $postedLevel === 'Elementary' ? 'selected' : '' ?>>Elementary</option>
+                  <option value="Secondary" <?= $postedLevel === 'Secondary' ? 'selected' : '' ?>>Secondary</option>
+                  <option value="<?= e($divisionLevel) ?>" <?= $postedLevel === $divisionLevel ? 'selected' : '' ?>><?= e($divisionLevel) ?></option>
+                </select>
               </div>
-              <div class="col-12 col-md-8">
+              <div class="col-12 col-md-8" id="schoolGroup">
                 <label class="form-label">School</label>
-                <input class="form-control" name="school" value="<?= e((string)$patient['school']) ?>" required>
+                <select class="form-select" name="school" id="schoolSelect" <?= $postedLevel === $divisionLevel ? '' : 'required' ?> <?= $postedLevel === $divisionLevel ? 'disabled' : '' ?>>
+                  <?php if ($postedLevel === $divisionLevel): ?>
+                    <option value="">Not applicable</option>
+                  <?php else: ?>
+                    <option value="">Select school</option>
+                    <?php foreach ($schoolsForLevel as $s): if ($s === '') continue; ?>
+                      <option value="<?= e($s) ?>" <?= ((string)($patient['school'] ?? '') === $s) ? 'selected' : '' ?>><?= e($s) ?></option>
+                    <?php endforeach; ?>
+                  <?php endif; ?>
+                </select>
+                <div class="form-text" id="schoolHelp" style="display: <?= $postedLevel === $divisionLevel ? 'block' : 'none' ?>;">Not applicable for division-level entry.</div>
               </div>
 
               <div class="col-12 col-md-4">
@@ -664,7 +754,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               </div>
               <div class="col-12 col-md-4">
                 <label class="form-label">District</label>
-                <input class="form-control" name="district" value="<?= e((string)$patient['district']) ?>">
+                <input class="form-control" name="district" id="districtInput" value="<?= e((string)$patient['district']) ?>">
               </div>
 
               <div class="col-12">
@@ -786,6 +876,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <input class="form-control" name="pmh_operation" id="pmh_operation" value="<?= e((string)($defaults['pmh_operation'] ?? '')) ?>" <?= in_array('Operation', (array)($defaults['pmh'] ?? []), true) ? '' : 'disabled' ?>>
               </div>
               <div class="col-12 col-md-6">
+                <label class="form-label d-flex align-items-center gap-2" for="pmh_special_allergies">
+                  <input class="form-check-input m-0" type="checkbox" name="pmh[]" id="pmh_special_allergies" value="Allergies" <?= in_array('Allergies', (array)($defaults['pmh'] ?? []), true) ? 'checked' : '' ?>>
+                  <span>Allergies</span>
+                </label>
+                <input class="form-control" name="pmh_allergies" id="pmh_allergies" value="<?= e((string)($defaults['pmh_allergies'] ?? '')) ?>" <?= in_array('Allergies', (array)($defaults['pmh'] ?? []), true) ? '' : 'disabled' ?>>
+              </div>
+              <div class="col-12 col-md-6">
                 <label class="form-label d-flex align-items-center gap-2" for="pmh_special_confinement">
                   <input class="form-check-input m-0" type="checkbox" name="pmh[]" id="pmh_special_confinement" value="Confinement" <?= in_array('Confinement', (array)($defaults['pmh'] ?? []), true) ? 'checked' : '' ?>>
                   <span>Confinement</span>
@@ -853,7 +950,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div>
               <div class="fw-semibold mb-2">B. Coping Level at Work</div>
               <div class="mb-2">
-                <img src="<?= e(asset('public/assets/likertScale.png')) ?>" alt="Likert Scale" style="max-width: 520px; width: 100%; height: auto; display: block; margin: 0 auto;">
+                <img src="<?= e(asset('public/assets/likertScale2.png')) ?>" alt="Likert Scale" style="max-width: 520px; width: 100%; height: auto; display: block; margin: 0 auto;">
               </div>
               <div class="vstack gap-2">
                 <?php foreach ($likertCoping as $k => $label): ?>
@@ -906,6 +1003,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
       bindToggle('pmh_special_cancer', 'pmh_cancer_type');
       bindToggle('pmh_special_operation', 'pmh_operation');
+      bindToggle('pmh_special_allergies', 'pmh_allergies');
       bindToggle('pmh_special_confinement', 'pmh_confinement');
     })();
   </script>
@@ -1298,6 +1396,149 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       window.addEventListener('scroll', function(){
         if (menu.style.display === 'block') placeMenu();
       }, true);
+    })();
+  </script>
+
+  <script>
+    (function(){
+      var elementary = <?= json_encode($elementarySchools, JSON_UNESCAPED_UNICODE) ?>;
+      var secondary = <?= json_encode($secondarySchools, JSON_UNESCAPED_UNICODE) ?>;
+      var divisionLevel = <?= json_encode($divisionLevel, JSON_UNESCAPED_UNICODE) ?>;
+      var levelEl = document.getElementById('levelSelect');
+      var schoolEl = document.getElementById('schoolSelect');
+      var schoolGroup = document.getElementById('schoolGroup');
+      var schoolHelp = document.getElementById('schoolHelp');
+      if (!levelEl || !schoolEl) return;
+
+      function setOptions(items){
+        var first = schoolEl.value;
+        schoolEl.innerHTML = '';
+        var opt0 = document.createElement('option');
+        opt0.value = '';
+        opt0.textContent = 'Select school';
+        schoolEl.appendChild(opt0);
+        items.forEach(function(name){
+          if (!name) return;
+          var opt = document.createElement('option');
+          opt.value = name;
+          opt.textContent = name;
+          schoolEl.appendChild(opt);
+        });
+        if (first && items.indexOf(first) !== -1) {
+          schoolEl.value = first;
+        }
+      }
+
+      function refresh(){
+        if (levelEl.value === divisionLevel) {
+          schoolEl.required = false;
+          schoolEl.disabled = true;
+          if (schoolGroup) schoolGroup.style.opacity = '0.65';
+          if (schoolHelp) schoolHelp.style.display = 'block';
+          schoolEl.innerHTML = '';
+          var opt = document.createElement('option');
+          opt.value = '';
+          opt.textContent = 'Not applicable';
+          schoolEl.appendChild(opt);
+          schoolEl.value = '';
+          return;
+        }
+
+        schoolEl.disabled = false;
+        schoolEl.required = true;
+        if (schoolGroup) schoolGroup.style.opacity = '';
+        if (schoolHelp) schoolHelp.style.display = 'none';
+        setOptions(levelEl.value === 'Secondary' ? secondary : elementary);
+      }
+
+      levelEl.addEventListener('change', function(){
+        schoolEl.value = '';
+        refresh();
+      });
+    })();
+  </script>
+
+  <script>
+    (function(){
+      var schoolEl = document.getElementById('schoolSelect');
+      var districtEl = document.getElementById('districtInput') || document.querySelector('input[name="district"]');
+      if (!schoolEl || !districtEl) return;
+
+      function norm(s){
+        return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+      }
+
+      var pairs = [
+        // District 1
+        ['Banlic Elementary School', 'District 1'],
+        ['Pulo Senior High School', 'District 1'],
+        ['Pulo Elementary School', 'District 1'],
+        ['San Isidro Elementary School', 'District 1'],
+        ['Mamatid Elementary School', 'District 1'],
+        ['Banay Banay Elementary School', 'District 1'],
+        ['Banay-Banay Elementary School', 'District 1'],
+
+        // District 2
+        ['Baclaran Elementary School', 'District 2'],
+        ['Mamatid National High School', 'District 2'],
+        ['Mamatid Senior High School', 'District 2'],
+        ['Mamatid Senior High School Stand Alone', 'District 2'],
+        ['Gulod Elementary School', 'District 2'],
+        ['Gulod National High School', 'District 2'],
+        ['Marinig South Elementary School', 'District 2'],
+
+        // District 3
+        ['Southville I Elementary School', 'District 3'],
+        ['Southville 1 Elementary School', 'District 3'],
+        ['Southville I Integrated National High School', 'District 3'],
+        ['Southville 1 Integrated National High School', 'District 3'],
+        ['North Marinig Elementary School', 'District 3'],
+        ['Marinig National High School', 'District 3'],
+        ['Butong Elementary School', 'District 3'],
+
+        // District 4
+        ['Cabuyao Central School', 'District 4'],
+        ['Bigaa Integrated National High School', 'District 4'],
+        ['Bigaa Elementary School', 'District 4'],
+        ['Cabuyao Integrated National High School', 'District 4'],
+        ['Sala Elementary School', 'District 4'],
+        ['Niugan Elementary School', 'District 4'],
+
+        // District 5
+        ['Casile Integrated National High School', 'District 5'],
+        ['Pulo National High School', 'District 5'],
+        ['Guinding Elementary School', 'District 5'],
+        ['Guinting Elementary School', 'District 5'],
+        ['Pittland Elementary School', 'District 5'],
+        ['Pittland Integrated School', 'District 5'],
+        ['Diezmo Integrated School', 'District 5'],
+        ['Diezmo Integrated School (Elem & JHS)', 'District 5'],
+        ['Casile Elementary School', 'District 5'],
+      ];
+
+      var map = {};
+      for (var i = 0; i < pairs.length; i++) {
+        map[norm(pairs[i][0])] = pairs[i][1];
+      }
+
+      var userEdited = false;
+      districtEl.addEventListener('input', function(){ userEdited = true; });
+
+      function applyDistrict(){
+        var school = schoolEl.value;
+        if (!school) return;
+        var d = map[norm(school)] || '';
+        if (!d) return;
+        if (userEdited && districtEl.value) return;
+        districtEl.value = d;
+      }
+
+      schoolEl.addEventListener('change', function(){
+        userEdited = false;
+        applyDistrict();
+      });
+
+      applyDistrict();
     })();
   </script>
 </body>
