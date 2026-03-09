@@ -63,13 +63,19 @@
     }
   }
 
-  async function fetchPdfData(type, patientId) {
+  async function fetchPdfData(type, patientId, extraParams) {
     var api = window.SDO_MDD_PDF_API || {};
     var pdfUrl = safeText(api.pdfUrl);
     if (!pdfUrl) {
       throw new Error('PDF API not configured');
     }
-    var fullUrl = apiUrlWithParams(pdfUrl, { type: type, patient_id: patientId });
+    var params = { type: type, patient_id: patientId };
+    if (extraParams && typeof extraParams === 'object') {
+      Object.keys(extraParams).forEach(function (k) {
+        params[k] = extraParams[k];
+      });
+    }
+    var fullUrl = apiUrlWithParams(pdfUrl, params);
     var res = await fetch(fullUrl, { headers: { 'Accept': 'application/json' } });
     if (!res.ok) {
       throw new Error('HTTP ' + res.status);
@@ -617,17 +623,49 @@
     }
 
     try {
+      var host = document.getElementById('singlePdfLinks');
+      if (!host) {
+        host = document.createElement('div');
+        host.id = 'singlePdfLinks';
+        host.style.position = 'fixed';
+        host.style.right = '12px';
+        host.style.bottom = '12px';
+        host.style.zIndex = '99999';
+        host.style.maxWidth = '360px';
+        host.style.maxHeight = '55vh';
+        host.style.overflow = 'auto';
+        host.style.background = '#fff';
+        host.style.border = '1px solid rgba(0,0,0,0.12)';
+        host.style.borderRadius = '12px';
+        host.style.boxShadow = '0 12px 28px rgba(0,0,0,0.18)';
+        host.style.padding = '10px';
+        host.style.fontFamily = 'system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
+        host.style.fontSize = '12px';
+        host.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px;">' +
+          '<div style="font-weight:700;">PDF Link</div>' +
+          '<button type="button" id="singlePdfLinksClose" style="border:0;background:transparent;font-size:16px;line-height:1;cursor:pointer;">×</button>' +
+        '</div>' +
+        '<div id="singlePdfLinksList" style="display:flex;flex-direction:column;gap:6px;"></div>';
+        document.body.appendChild(host);
+        var closeBtn = document.getElementById('singlePdfLinksClose');
+        if (closeBtn) {
+          closeBtn.addEventListener('click', function(){
+            try { host.remove(); } catch (e) {}
+          });
+        }
+      }
+
+      var list = document.getElementById('singlePdfLinksList') || host;
       var a = document.createElement('a');
       a.href = blobUrl;
-      a.download = filename;
-      a.style.display = 'none';
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(function () {
-        try { document.body.removeChild(a); } catch (e) {}
-      }, 0);
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.textContent = 'Open: ' + filename;
+      a.style.display = 'block';
+      a.style.color = '#0d6efd';
+      a.style.textDecoration = 'none';
+      list.appendChild(a);
     } catch (e) {
-      window.location.href = blobUrl;
     }
   }
 
@@ -636,6 +674,7 @@
     var type = safeText(options.type || 'medical');
     var patientId = options.patientId;
     var title = safeText(options.title || 'Medical Form');
+    var behavior = safeText(options.behavior || 'open');
 
     if (type !== 'medical') {
       alert('Unsupported PDF type. Please use the Dental dashboard PDF button for dental forms.');
@@ -773,6 +812,15 @@
 
     var pdfBlob = doc.output('blob');
     var url = URL.createObjectURL(pdfBlob);
+    if (behavior === 'link') {
+      return {
+        ok: true,
+        blob: pdfBlob,
+        blobUrl: url,
+        filename: (title ? String(title) : 'form') + '.pdf',
+        title: title,
+      };
+    }
     openPdfInNewTabOrDownload(pdfBlob, title);
   };
 
@@ -783,6 +831,320 @@
       patientId: options.patientId,
       title: options.title || 'Medical Form',
     });
+  };
+
+  window.sdoGenerateMedicalBulkPdf = async function sdoGenerateMedicalBulkPdf(options) {
+    options = options || {};
+    var patientIds = Array.isArray(options.patientIds) ? options.patientIds : [];
+    var title = safeText(options.title || 'Medical Forms (Bulk)');
+    var behavior = safeText(options.behavior || 'open');
+
+    var jsPDFCtor = null;
+    if (typeof window.jsPDF === 'function') {
+      jsPDFCtor = window.jsPDF;
+    } else if (window.jspdf && typeof window.jspdf.jsPDF === 'function') {
+      jsPDFCtor = window.jspdf.jsPDF;
+    }
+    if (!jsPDFCtor) {
+      alert('jsPDF is not loaded.');
+      return;
+    }
+
+    var assets = window.SDO_MDD_PDF_ASSETS || {};
+    var headerUrl = safeText(assets.headerUrl);
+    var footerUrl = safeText(assets.footerUrl);
+    var likertUrl = safeText(assets.likertUrl);
+    var likert2Url = safeText(assets.likert2Url);
+    var ape1LogoUrl = safeText(assets.ape1LogoUrl);
+
+    if (!headerUrl || !footerUrl) {
+      alert('PDF header/footer assets are not configured.');
+      return;
+    }
+
+    var headerDataUrl, footerDataUrl, likertDataUrl, likert2DataUrl, ape1DataUrl;
+    try {
+      var tasks = [loadImageAsDataURL(headerUrl), loadImageAsDataURL(footerUrl)];
+      if (likertUrl) tasks.push(loadImageAsDataURL(likertUrl));
+      if (likert2Url) tasks.push(loadImageAsDataURL(likert2Url));
+      if (ape1LogoUrl) tasks.push(loadImageAsDataURL(ape1LogoUrl));
+      var res = await Promise.all(tasks);
+      headerDataUrl = res[0];
+      footerDataUrl = res[1];
+      var idx = 2;
+      if (likertUrl) likertDataUrl = res[idx++];
+      if (likert2Url) likert2DataUrl = res[idx++];
+      if (ape1LogoUrl) ape1DataUrl = res[idx++];
+    } catch (e) {
+      alert('Failed to load header/footer images.');
+      return;
+    }
+
+    var doc = new jsPDFCtor({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+    var pageWidth = doc.internal.pageSize.getWidth();
+    var pageHeight = doc.internal.pageSize.getHeight();
+
+    var headerSize = await getImageSize(headerDataUrl);
+    var headerAspect = (headerSize.width || 1) / (headerSize.height || 1);
+    var headerW = Math.min(55, pageWidth - 20);
+    var headerH = headerW / headerAspect;
+    var headerY = 5;
+
+    var footerSize = await getImageSize(footerDataUrl);
+    var footerAspect = (footerSize.width || 1) / (footerSize.height || 1);
+    var footerW = pageWidth - 20;
+    var footerH = footerW / footerAspect;
+    var footerY = pageHeight - footerH - 3;
+
+    var shared = {
+      pageWidth: pageWidth,
+      pageHeight: pageHeight,
+      headerDataUrl: headerDataUrl,
+      footerDataUrl: footerDataUrl,
+      headerW: headerW,
+      headerH: headerH,
+      headerY: headerY,
+      footerW: footerW,
+      footerH: footerH,
+      footerY: footerY,
+    };
+
+    var page2Assets = {
+      likertDataUrl: likertDataUrl,
+      likert2DataUrl: likert2DataUrl,
+      ape1DataUrl: ape1DataUrl,
+      likertAspect: null,
+      likert2Aspect: null,
+      ape1Aspect: null,
+    };
+    try {
+      if (likertDataUrl) {
+        var s1 = await getImageSize(likertDataUrl);
+        page2Assets.likertAspect = (s1.width || 1) / (s1.height || 1);
+      }
+      if (likert2DataUrl) {
+        var s1b = await getImageSize(likert2DataUrl);
+        page2Assets.likert2Aspect = (s1b.width || 1) / (s1b.height || 1);
+      }
+      if (ape1DataUrl) {
+        var s2 = await getImageSize(ape1DataUrl);
+        page2Assets.ape1Aspect = (s2.width || 1) / (s2.height || 1);
+      }
+    } catch (e) {
+    }
+
+    var first = true;
+    for (var i = 0; i < patientIds.length; i++) {
+      var pid = toNum(patientIds[i]);
+      if (!pid) continue;
+
+      if (!first) {
+        doc.addPage();
+      }
+      first = false;
+      drawHeaderFooter(doc, shared);
+
+      try {
+        var data = await fetchPdfData('medical', pid);
+        renderMedicalForm(doc, shared, data);
+        doc.addPage();
+        drawHeaderFooter(doc, shared);
+        renderMedicalPage2MentalHealth(doc, shared, data, page2Assets);
+      } catch (e) {
+        var fallbackY = shared.headerY + shared.headerH + 15;
+        doc.setFontSize(11);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(200, 0, 0);
+        doc.text('Failed to load data for PDF (Patient ID: ' + pid + ').', 14, fallbackY);
+        doc.addPage();
+        drawHeaderFooter(doc, shared);
+        doc.setFontSize(11);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(200, 0, 0);
+        doc.text('Failed to load data for PDF (Patient ID: ' + pid + ').', 14, fallbackY);
+      }
+    }
+
+    var pdfBlob = doc.output('blob');
+    var url = URL.createObjectURL(pdfBlob);
+    if (behavior === 'link') {
+      return {
+        ok: true,
+        blob: pdfBlob,
+        blobUrl: url,
+        filename: (title ? String(title) : 'medical-bulk') + '.pdf',
+        title: title,
+      };
+    }
+    openPdfInNewTabOrDownload(pdfBlob, title);
+  };
+
+  window.sdoRenderMedicalForm = renderMedicalForm;
+  window.sdoRenderMedicalPage2MentalHealth = renderMedicalPage2MentalHealth;
+  window.sdoDrawMedicalHeaderFooter = drawHeaderFooter;
+
+  window.sdoGenerateMedicalDentalBulkPdf = async function sdoGenerateMedicalDentalBulkPdf(options) {
+    options = options || {};
+    var patientIds = Array.isArray(options.patientIds) ? options.patientIds : [];
+    var title = safeText(options.title || 'Medical + Dental Forms (Bulk)');
+    var behavior = safeText(options.behavior || 'open');
+
+    if (typeof window.sdoRenderDentalForm !== 'function') {
+      alert('Dental PDF renderer is not loaded.');
+      return;
+    }
+
+    var jsPDFCtor = null;
+    if (typeof window.jsPDF === 'function') {
+      jsPDFCtor = window.jsPDF;
+    } else if (window.jspdf && typeof window.jspdf.jsPDF === 'function') {
+      jsPDFCtor = window.jspdf.jsPDF;
+    }
+    if (!jsPDFCtor) {
+      alert('jsPDF is not loaded.');
+      return;
+    }
+
+    var assets = window.SDO_MDD_PDF_ASSETS || {};
+    var headerUrl = safeText(assets.headerUrl);
+    var footerUrl = safeText(assets.footerUrl);
+    var likertUrl = safeText(assets.likertUrl);
+    var likert2Url = safeText(assets.likert2Url);
+    var ape1LogoUrl = safeText(assets.ape1LogoUrl);
+    var ape2LogoUrl = safeText(assets.ape2LogoUrl);
+
+    if (!headerUrl || !footerUrl) {
+      alert('PDF header/footer assets are not configured.');
+      return;
+    }
+
+    var headerDataUrl, footerDataUrl, likertDataUrl, likert2DataUrl, ape1DataUrl, ape2DataUrl;
+    try {
+      var tasks = [loadImageAsDataURL(headerUrl), loadImageAsDataURL(footerUrl)];
+      if (likertUrl) tasks.push(loadImageAsDataURL(likertUrl));
+      if (likert2Url) tasks.push(loadImageAsDataURL(likert2Url));
+      if (ape1LogoUrl) tasks.push(loadImageAsDataURL(ape1LogoUrl));
+      if (ape2LogoUrl) tasks.push(loadImageAsDataURL(ape2LogoUrl));
+      var res = await Promise.all(tasks);
+      headerDataUrl = res[0];
+      footerDataUrl = res[1];
+      var idx = 2;
+      if (likertUrl) likertDataUrl = res[idx++];
+      if (likert2Url) likert2DataUrl = res[idx++];
+      if (ape1LogoUrl) ape1DataUrl = res[idx++];
+      if (ape2LogoUrl) ape2DataUrl = res[idx++];
+    } catch (e) {
+      alert('Failed to load header/footer images.');
+      return;
+    }
+
+    var doc = new jsPDFCtor({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+    var pageWidth = doc.internal.pageSize.getWidth();
+    var pageHeight = doc.internal.pageSize.getHeight();
+
+    var headerSize = await getImageSize(headerDataUrl);
+    var headerAspect = (headerSize.width || 1) / (headerSize.height || 1);
+    var headerW = Math.min(55, pageWidth - 20);
+    var headerH = headerW / headerAspect;
+    var headerY = 5;
+
+    var footerSize = await getImageSize(footerDataUrl);
+    var footerAspect = (footerSize.width || 1) / (footerSize.height || 1);
+    var footerW = pageWidth - 20;
+    var footerH = footerW / footerAspect;
+    var footerY = pageHeight - footerH - 3;
+
+    var shared = {
+      pageWidth: pageWidth,
+      pageHeight: pageHeight,
+      headerDataUrl: headerDataUrl,
+      footerDataUrl: footerDataUrl,
+      headerW: headerW,
+      headerH: headerH,
+      headerY: headerY,
+      footerW: footerW,
+      footerH: footerH,
+      footerY: footerY,
+    };
+
+    var page2Assets = {
+      likertDataUrl: likertDataUrl,
+      likert2DataUrl: likert2DataUrl,
+      ape1DataUrl: ape1DataUrl,
+      likertAspect: null,
+      likert2Aspect: null,
+      ape1Aspect: null,
+    };
+    try {
+      if (likertDataUrl) {
+        var s1 = await getImageSize(likertDataUrl);
+        page2Assets.likertAspect = (s1.width || 1) / (s1.height || 1);
+      }
+      if (likert2DataUrl) {
+        var s1b = await getImageSize(likert2DataUrl);
+        page2Assets.likert2Aspect = (s1b.width || 1) / (s1b.height || 1);
+      }
+      if (ape1DataUrl) {
+        var s2 = await getImageSize(ape1DataUrl);
+        page2Assets.ape1Aspect = (s2.width || 1) / (s2.height || 1);
+      }
+    } catch (e) {
+    }
+
+    var dentalAssets = { ape2DataUrl: ape2DataUrl, ape2Aspect: null };
+    try {
+      if (ape2DataUrl) {
+        var s3 = await getImageSize(ape2DataUrl);
+        dentalAssets.ape2Aspect = (s3.width || 1) / (s3.height || 1);
+      }
+    } catch (e) {
+    }
+
+    var first = true;
+    for (var i = 0; i < patientIds.length; i++) {
+      var pid = toNum(patientIds[i]);
+      if (!pid) continue;
+
+      try {
+        var medData = await fetchPdfData('medical', pid, { combined: 1 });
+        var dentData = await fetchPdfData('dental', pid, { combined: 1 });
+
+        if (!first) doc.addPage();
+        first = false;
+        drawHeaderFooter(doc, shared);
+        renderMedicalForm(doc, shared, medData);
+
+        doc.addPage();
+        drawHeaderFooter(doc, shared);
+        renderMedicalPage2MentalHealth(doc, shared, medData, page2Assets);
+
+        doc.addPage();
+        drawHeaderFooter(doc, shared);
+        window.sdoRenderDentalForm(doc, shared, dentData, dentalAssets);
+      } catch (e) {
+        if (!first) doc.addPage();
+        first = false;
+        drawHeaderFooter(doc, shared);
+        var fallbackY = shared.headerY + shared.headerH + 15;
+        doc.setFontSize(11);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(200, 0, 0);
+        doc.text('Failed to load data for combined PDF (Patient ID: ' + pid + ').', 14, fallbackY);
+      }
+    }
+
+    var pdfBlob = doc.output('blob');
+    var url = URL.createObjectURL(pdfBlob);
+    if (behavior === 'link') {
+      return {
+        ok: true,
+        blob: pdfBlob,
+        blobUrl: url,
+        filename: (title ? String(title) : 'bulk') + '.pdf',
+        title: title,
+      };
+    }
+    openPdfInNewTabOrDownload(pdfBlob, title);
   };
 
 })();

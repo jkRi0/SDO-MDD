@@ -22,6 +22,7 @@ if (!in_array($user['role'] ?? '', ['admin', 'medical', 'dental'], true)) {
 
 $type = (string)($_GET['type'] ?? 'medical');
 $patientId = (int)($_GET['patient_id'] ?? 0);
+ $combined = (string)($_GET['combined'] ?? '') === '1';
 
 if (!in_array($type, ['medical', 'dental'], true) || $patientId <= 0) {
     http_response_code(400);
@@ -30,12 +31,12 @@ if (!in_array($type, ['medical', 'dental'], true) || $patientId <= 0) {
 }
 
 // Role restriction: staff can only request their module
-if (($user['role'] ?? '') === 'medical' && $type !== 'medical') {
+if (!$combined && ($user['role'] ?? '') === 'medical' && $type !== 'medical') {
     http_response_code(403);
     echo json_encode(['ok' => false, 'error' => 'Forbidden']);
     exit;
 }
-if (($user['role'] ?? '') === 'dental' && $type !== 'dental') {
+if (!$combined && ($user['role'] ?? '') === 'dental' && $type !== 'dental') {
     http_response_code(403);
     echo json_encode(['ok' => false, 'error' => 'Forbidden']);
     exit;

@@ -992,6 +992,7 @@
     var type = safeText(options.type || 'medical');
     var patientId = options.patientId;
     var title = safeText(options.title || (type === 'medical' ? 'Medical Form' : 'Dental Form'));
+    var behavior = safeText(options.behavior || 'open');
 
     var assets = window.SDO_MDD_PDF_ASSETS || {};
     var headerUrl = safeText(assets.headerUrl);
@@ -1132,6 +1133,15 @@
 
     var pdfBlob = doc.output('blob');
     var url = URL.createObjectURL(pdfBlob);
+    if (behavior === 'link') {
+      return {
+        ok: true,
+        blob: pdfBlob,
+        blobUrl: url,
+        filename: (title ? String(title) : 'form') + '.pdf',
+        title: title,
+      };
+    }
     openPdfInNewTabOrDownload(pdfBlob, title);
   };
 

@@ -173,17 +173,49 @@
     }
 
     try {
+      var host = document.getElementById('singlePdfLinks');
+      if (!host) {
+        host = document.createElement('div');
+        host.id = 'singlePdfLinks';
+        host.style.position = 'fixed';
+        host.style.right = '12px';
+        host.style.bottom = '12px';
+        host.style.zIndex = '99999';
+        host.style.maxWidth = '360px';
+        host.style.maxHeight = '55vh';
+        host.style.overflow = 'auto';
+        host.style.background = '#fff';
+        host.style.border = '1px solid rgba(0,0,0,0.12)';
+        host.style.borderRadius = '12px';
+        host.style.boxShadow = '0 12px 28px rgba(0,0,0,0.18)';
+        host.style.padding = '10px';
+        host.style.fontFamily = 'system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
+        host.style.fontSize = '12px';
+        host.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px;">' +
+          '<div style="font-weight:700;">PDF Link</div>' +
+          '<button type="button" id="singlePdfLinksClose" style="border:0;background:transparent;font-size:16px;line-height:1;cursor:pointer;">×</button>' +
+        '</div>' +
+        '<div id="singlePdfLinksList" style="display:flex;flex-direction:column;gap:6px;"></div>';
+        document.body.appendChild(host);
+        var closeBtn = document.getElementById('singlePdfLinksClose');
+        if (closeBtn) {
+          closeBtn.addEventListener('click', function(){
+            try { host.remove(); } catch (e) {}
+          });
+        }
+      }
+
+      var list = document.getElementById('singlePdfLinksList') || host;
       var a = document.createElement('a');
       a.href = blobUrl;
-      a.download = filename;
-      a.style.display = 'none';
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(function () {
-        try { document.body.removeChild(a); } catch (e) {}
-      }, 0);
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.textContent = 'Open: ' + filename;
+      a.style.display = 'block';
+      a.style.color = '#0d6efd';
+      a.style.textDecoration = 'none';
+      list.appendChild(a);
     } catch (e) {
-      window.location.href = blobUrl;
     }
   }
 
@@ -884,6 +916,7 @@
     options = options || {};
     var patientId = options.patientId;
     var title = safeText(options.title || 'Dental Form');
+    var behavior = safeText(options.behavior || 'open');
 
     var jsPDFCtor = null;
     if (typeof window.jsPDF === 'function') {
@@ -975,6 +1008,134 @@
     }
 
     var pdfBlob = doc.output('blob');
+    var url = URL.createObjectURL(pdfBlob);
+    if (behavior === 'link') {
+      return {
+        ok: true,
+        blob: pdfBlob,
+        blobUrl: url,
+        filename: (title ? String(title) : 'form') + '.pdf',
+        title: title,
+      };
+    }
     openPdfInNewTabOrDownload(pdfBlob, title);
   };
+
+  window.sdoGenerateDentalBulkPdf = async function sdoGenerateDentalBulkPdf(options) {
+    options = options || {};
+    var patientIds = Array.isArray(options.patientIds) ? options.patientIds : [];
+    var title = safeText(options.title || 'Dental Forms (Bulk)');
+    var behavior = safeText(options.behavior || 'open');
+
+    var jsPDFCtor = null;
+    if (typeof window.jsPDF === 'function') {
+      jsPDFCtor = window.jsPDF;
+    } else if (window.jspdf && typeof window.jspdf.jsPDF === 'function') {
+      jsPDFCtor = window.jspdf.jsPDF;
+    }
+    if (!jsPDFCtor) {
+      alert('jsPDF is not loaded.');
+      return;
+    }
+
+    var assets = window.SDO_MDD_PDF_ASSETS || {};
+    var headerUrl = safeText(assets.headerUrl);
+    var footerUrl = safeText(assets.footerUrl);
+    var ape2LogoUrl = safeText(assets.ape2LogoUrl);
+
+    if (!headerUrl || !footerUrl) {
+      alert('PDF header/footer assets are not configured.');
+      return;
+    }
+
+    var headerDataUrl, footerDataUrl, ape2DataUrl;
+    try {
+      var tasks = [loadImageAsDataURL(headerUrl), loadImageAsDataURL(footerUrl)];
+      if (ape2LogoUrl) tasks.push(loadImageAsDataURL(ape2LogoUrl));
+      var res = await Promise.all(tasks);
+      headerDataUrl = res[0];
+      footerDataUrl = res[1];
+      ape2DataUrl = ape2LogoUrl ? res[2] : null;
+    } catch (e) {
+      alert('Failed to load header/footer images.');
+      return;
+    }
+
+    var doc = new jsPDFCtor({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+    var pageWidth = doc.internal.pageSize.getWidth();
+    var pageHeight = doc.internal.pageSize.getHeight();
+
+    var headerSize = await getImageSize(headerDataUrl);
+    var headerAspect = (headerSize.width || 1) / (headerSize.height || 1);
+    var headerW = Math.min(55, pageWidth - 20);
+    var headerH = headerW / headerAspect;
+    var headerY = 5;
+
+    var footerSize = await getImageSize(footerDataUrl);
+    var footerAspect = (footerSize.width || 1) / (footerSize.height || 1);
+    var footerW = pageWidth - 20;
+    var footerH = footerW / footerAspect;
+    var footerY = pageHeight - footerH - 3;
+
+    var shared = {
+      pageWidth: pageWidth,
+      pageHeight: pageHeight,
+      headerDataUrl: headerDataUrl,
+      footerDataUrl: footerDataUrl,
+      headerW: headerW,
+      headerH: headerH,
+      headerY: headerY,
+      footerW: footerW,
+      footerH: footerH,
+      footerY: footerY,
+    };
+
+    var dentalAssets = { ape2DataUrl: ape2DataUrl, ape2Aspect: null };
+    try {
+      if (ape2DataUrl) {
+        var s = await getImageSize(ape2DataUrl);
+        dentalAssets.ape2Aspect = (s.width || 1) / (s.height || 1);
+      }
+    } catch (e) {
+    }
+
+    var first = true;
+    for (var i = 0; i < patientIds.length; i++) {
+      var pid = toNum(patientIds[i]);
+      if (!pid) continue;
+
+      if (!first) {
+        doc.addPage();
+      }
+      first = false;
+      drawHeaderFooter(doc, shared);
+
+      try {
+        var data = await fetchPdfData('dental', pid);
+        renderDentalForm(doc, shared, data, dentalAssets);
+      } catch (e) {
+        var fallbackY = shared.headerY + shared.headerH + 15;
+        doc.setFontSize(11);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(200, 0, 0);
+        doc.text('Failed to load data for PDF (Patient ID: ' + pid + ').', 14, fallbackY);
+      }
+    }
+
+    var pdfBlob = doc.output('blob');
+    var url = URL.createObjectURL(pdfBlob);
+    if (behavior === 'link') {
+      return {
+        ok: true,
+        blob: pdfBlob,
+        blobUrl: url,
+        filename: (title ? String(title) : 'dental-bulk') + '.pdf',
+        title: title,
+      };
+    }
+    openPdfInNewTabOrDownload(pdfBlob, title);
+  };
+
+  window.sdoRenderDentalForm = renderDentalForm;
+  window.sdoDrawDentalHeaderFooter = drawHeaderFooter;
 })();
