@@ -320,6 +320,9 @@ $designationOptions = [
           <div class="col-12 col-md-auto d-grid">
             <button class="btn btn-outline-primary" type="button" id="btnBulkPdf2">PDF2</button>
           </div>
+          <div class="col-12 col-md-auto d-grid">
+            <button class="btn btn-success" type="button" id="btnExcel">EXCEL</button>
+          </div>
         </div>
         <div class="mt-2 small text-secondary" id="bulkPdfStatus" style="display:none;"></div>
         <div class="mt-2" id="bulkPdfLinks" style="display:none;"></div>
@@ -882,6 +885,95 @@ $designationOptions = [
           if (statusEl) statusEl.textContent = 'Done.';
         }
 
+        function safeSheetName(name){
+          var s = String(name == null ? '' : name).trim();
+          if (!s) s = 'Unknown';
+          s = s.replace(/[\\/?*\[\]:]/g, ' ');
+          s = s.replace(/\s+/g, ' ').trim();
+          if (s.length > 31) s = s.slice(0, 31);
+          return s || 'Unknown';
+        }
+
+        function downloadArrayAsFile(bytes, filename, mime){
+          var blob = new Blob([bytes], { type: mime || 'application/octet-stream' });
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement('a');
+          a.href = url;
+          a.download = filename || 'export.xlsx';
+          a.style.display = 'none';
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(function(){
+            try { document.body.removeChild(a); } catch (e) {}
+            try { URL.revokeObjectURL(url); } catch (e) {}
+          }, 0);
+        }
+
+        function generateExcel(){
+          if (!lastRows || lastRows.length === 0) return;
+          if (!window.XLSX || !window.XLSX.utils) {
+            alert('Excel library is not loaded.');
+            return;
+          }
+
+          var statusEl = document.getElementById('bulkPdfStatus');
+          if (statusEl) {
+            statusEl.style.display = '';
+            statusEl.textContent = 'Preparing Excel...';
+          }
+
+          var headers = ['ID','Patient','Level','Entry Date','School','Medical','Dental'];
+          var groups = {};
+          for (var i = 0; i < lastRows.length; i++) {
+            var r = lastRows[i] || {};
+            var school = String(r.school == null ? '' : r.school);
+            var key = school.trim() ? school.trim() : 'Unknown';
+            if (!groups[key]) groups[key] = [];
+            groups[key].push(r);
+          }
+
+          var wb = window.XLSX.utils.book_new();
+          var usedNames = {};
+          Object.keys(groups).sort().forEach(function(schoolKey){
+            var rows = groups[schoolKey] || [];
+            var aoa = [headers];
+            for (var j = 0; j < rows.length; j++) {
+              var r = rows[j] || {};
+              aoa.push([
+                Number(r.id || 0),
+                String(r.fullname == null ? '' : r.fullname),
+                String(r.level == null ? '' : r.level),
+                String(r.entry_date == null ? '' : r.entry_date),
+                String(r.school == null ? '' : r.school),
+                Number(r.medical_checked) === 1 ? 'Checked' : 'Pending',
+                Number(r.dental_checked) === 1 ? 'Checked' : 'Pending',
+              ]);
+            }
+
+            var sheetNameBase = safeSheetName(schoolKey);
+            var sheetName = sheetNameBase;
+            var n = 2;
+            while (usedNames[sheetName]) {
+              var suffix = ' (' + n + ')';
+              var trimmed = sheetNameBase;
+              if (trimmed.length + suffix.length > 31) trimmed = trimmed.slice(0, 31 - suffix.length);
+              sheetName = trimmed + suffix;
+              n++;
+            }
+            usedNames[sheetName] = true;
+
+            var ws = window.XLSX.utils.aoa_to_sheet(aoa);
+            window.XLSX.utils.book_append_sheet(wb, ws, sheetName);
+          });
+
+          var out = window.XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+          var now = new Date();
+          var pad = function(v){ return String(v).padStart(2,'0'); };
+          var stamp = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate());
+          downloadArrayAsFile(out, 'Dental-Dashboard-' + stamp + '.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+          if (statusEl) statusEl.textContent = 'Done.';
+        }
+
         async function generatePdf2(){
           if (!lastRows || lastRows.length === 0) return;
           if (!window.sdoGenerateMedicalDentalBulkPdf) return;
@@ -959,12 +1051,20 @@ $designationOptions = [
             generatePdf2();
           });
         }
+
+        var btnExcel = document.getElementById('btnExcel');
+        if (btnExcel) {
+          btnExcel.addEventListener('click', function(){
+            generateExcel();
+          });
+        }
       })();
     </script>
   </main>
 
   <!-- jsPDF must load before blank-pdf.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script>
     window.SDO_MDD_PDF_ASSETS = {
       headerUrl: <?= json_encode(asset('public/assets/header.jpg'), JSON_UNESCAPED_SLASHES) ?>,
