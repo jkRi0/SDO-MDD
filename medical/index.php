@@ -380,13 +380,25 @@ $designationOptions = [
           var host = document.getElementById('bulkPdfLinks');
           if (!host) return;
           host.style.display = 'none';
+          var title = link.filename || link.title || 'Open PDF';
+          host.innerHTML = '';
+
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'btn btn-primary btn-sm';
+          btn.textContent = 'Open PDF';
+          btn.addEventListener('click', function(){
+            tryOpenPdf(link, true);
+          });
+
           var a = document.createElement('a');
           a.href = link.blobUrl;
           a.target = '_blank';
           a.rel = 'noopener noreferrer';
-          a.className = 'text-decoration-none';
-          a.textContent = link.filename || link.title || 'Open PDF';
-          host.innerHTML = '';
+          a.className = 'ms-2 text-decoration-none';
+          a.textContent = String(title);
+
+          host.appendChild(btn);
           host.appendChild(a);
         }
 
@@ -394,6 +406,48 @@ $designationOptions = [
           var host = document.getElementById('bulkPdfLinks');
           if (!host) return;
           host.style.display = '';
+        }
+
+        function tryOpenPdf(link, userInitiated){
+          if (!link || !link.blobUrl) return false;
+          try {
+            var w = window.open(link.blobUrl, '_blank', 'noopener,noreferrer');
+            if (w) return true;
+          } catch (e) {
+          }
+          if (userInitiated) return false;
+          return false;
+        }
+
+        function setPdfLoading(isLoading, message){
+          var statusEl = document.getElementById('bulkPdfStatus');
+          var btn1 = document.getElementById('btnBulkPdf1');
+          var btn2 = document.getElementById('btnBulkPdf2');
+          if (btn1) btn1.disabled = !!isLoading;
+          if (btn2) btn2.disabled = !!isLoading;
+
+          if (!statusEl) return;
+          if (isLoading) {
+            statusEl.style.display = '';
+            statusEl.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>' +
+              escHtml(message || 'Preparing PDF...');
+          } else {
+            statusEl.innerHTML = escHtml(message || 'Done.');
+          }
+        }
+
+        function yieldToUi(){
+          return new Promise(function(resolve){
+            try {
+              if (window.requestAnimationFrame) {
+                window.requestAnimationFrame(function(){ resolve(); });
+              } else {
+                setTimeout(resolve, 0);
+              }
+            } catch (e) {
+              setTimeout(resolve, 0);
+            }
+          });
         }
 
         var levelEl = document.getElementById('fLevel');
@@ -836,12 +890,9 @@ $designationOptions = [
           if (!lastRows || lastRows.length === 0) return;
           if (!window.sdoGenerateMedicalBulkPdf) return;
 
-          var statusEl = document.getElementById('bulkPdfStatus');
+          setPdfLoading(true, 'Preparing...');
+          await yieldToUi();
           var linksEl = document.getElementById('bulkPdfLinks');
-          if (statusEl) {
-            statusEl.style.display = '';
-            statusEl.textContent = 'Preparing...';
-          }
           if (linksEl) {
             linksEl.style.display = 'none';
             linksEl.innerHTML = '';
@@ -856,34 +907,19 @@ $designationOptions = [
           }
           if (ids.length === 0) return;
 
-          if (statusEl) statusEl.textContent = 'Generating 1 combined PDF (' + ids.length + ' patients)...';
+          setPdfLoading(true, 'Generating 1 combined PDF (' + ids.length + ' patients)...');
+          await yieldToUi();
           try {
             var link = await window.sdoGenerateMedicalBulkPdf({ patientIds: ids, title: 'Medical Forms (Bulk)', behavior: 'link' });
             addBulkLink(link);
 
-            var openedOk = false;
-            try {
-              if (generatePdf1._preOpened && generatePdf1._preOpened.document && link && link.blobUrl) {
-                var w = generatePdf1._preOpened;
-                w.document.open();
-                w.document.write(
-                  '<!doctype html><html><head><meta charset="utf-8"><title>' +
-                  String(link.filename || link.title || 'PDF').replace(/</g, '&lt;') +
-                  '</title><style>html,body{height:100%;margin:0}iframe{border:0;width:100%;height:100%}</style></head>' +
-                  '<body><iframe src="' + link.blobUrl + '"></iframe></body></html>'
-                );
-                w.document.close();
-                openedOk = true;
-              }
-            } catch (e) {
-            }
-
+            var openedOk = tryOpenPdf(link, false);
             if (!openedOk) showBulkLink();
           } catch (e) {
             showBulkLink();
           }
 
-          if (statusEl) statusEl.textContent = 'Done.';
+          setPdfLoading(false, 'Done.');
         }
 
         function safeSheetName(name){
@@ -979,12 +1015,9 @@ $designationOptions = [
           if (!lastRows || lastRows.length === 0) return;
           if (!window.sdoGenerateMedicalDentalBulkPdf) return;
 
-          var statusEl = document.getElementById('bulkPdfStatus');
+          setPdfLoading(true, 'Preparing...');
+          await yieldToUi();
           var linksEl = document.getElementById('bulkPdfLinks');
-          if (statusEl) {
-            statusEl.style.display = '';
-            statusEl.textContent = 'Preparing...';
-          }
           if (linksEl) {
             linksEl.style.display = 'none';
             linksEl.innerHTML = '';
@@ -999,44 +1032,24 @@ $designationOptions = [
           }
           if (ids.length === 0) return;
 
-          if (statusEl) statusEl.textContent = 'Generating 1 combined PDF (Medical then Dental) for ' + ids.length + ' patients...';
+          setPdfLoading(true, 'Generating 1 combined PDF (Medical then Dental) for ' + ids.length + ' patients...');
+          await yieldToUi();
           try {
             var link = await window.sdoGenerateMedicalDentalBulkPdf({ patientIds: ids, title: 'Medical + Dental Forms (Bulk)', behavior: 'link' });
             addBulkLink(link);
 
-            var openedOk = false;
-            try {
-              if (generatePdf2._preOpened && generatePdf2._preOpened.document && link && link.blobUrl) {
-                var w = generatePdf2._preOpened;
-                w.document.open();
-                w.document.write(
-                  '<!doctype html><html><head><meta charset="utf-8"><title>' +
-                  String(link.filename || link.title || 'PDF').replace(/</g, '&lt;') +
-                  '</title><style>html,body{height:100%;margin:0}iframe{border:0;width:100%;height:100%}</style></head>' +
-                  '<body><iframe src="' + link.blobUrl + '"></iframe></body></html>'
-                );
-                w.document.close();
-                openedOk = true;
-              }
-            } catch (e) {
-            }
-
+            var openedOk = tryOpenPdf(link, false);
             if (!openedOk) showBulkLink();
           } catch (e) {
             showBulkLink();
           }
 
-          if (statusEl) statusEl.textContent = 'Done.';
+          setPdfLoading(false, 'Done.');
         }
 
         var btnPdf1 = document.getElementById('btnBulkPdf1');
         if (btnPdf1) {
           btnPdf1.addEventListener('click', function(){
-            try {
-              generatePdf1._preOpened = window.open('', '_blank');
-            } catch (e) {
-              generatePdf1._preOpened = null;
-            }
             generatePdf1();
           });
         }
@@ -1044,11 +1057,6 @@ $designationOptions = [
         var btnPdf2 = document.getElementById('btnBulkPdf2');
         if (btnPdf2) {
           btnPdf2.addEventListener('click', function(){
-            try {
-              generatePdf2._preOpened = window.open('', '_blank');
-            } catch (e) {
-              generatePdf2._preOpened = null;
-            }
             generatePdf2();
           });
         }
