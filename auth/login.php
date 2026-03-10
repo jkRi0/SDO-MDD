@@ -157,7 +157,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
     
     <div class="mt-5 text-center text-muted small">
-      &copy; <?= date('Y') ?> Deped SDO Cabuyao. All rights reserved.
+      &copy; <?= date('Y') ?> DepEd SDO Cabuyao. All rights reserved.
     </div>
   </div>
 
