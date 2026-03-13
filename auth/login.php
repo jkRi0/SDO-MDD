@@ -28,14 +28,20 @@ if ($insufficientRole) {
 }
 
 $user = current_user();
-$mustLogoutToSwitch = false;
-if ($user && $requiredRole !== '' && !has_role($requiredRole)) {
-    $mustLogoutToSwitch = true;
-    $error = "You're currently logged in as " . ucfirst((string)($user['role'] ?? '')) . ". Please logout to switch to " . ucfirst($requiredRole) . ".";
+
+function dashboard_for_role(?string $role): string
+{
+    $role = strtolower(trim((string)$role));
+    if ($role === 'admin') return '/admin/index.php';
+    if ($role === 'medical') return '/medical/index.php';
+    if ($role === 'dental') return '/dental/index.php';
+    return '/';
 }
 
-if ($user && !$mustLogoutToSwitch) {
-    redirect('/');
+$myDashboard = $user ? dashboard_for_role((string)($user['role'] ?? '')) : '/';
+
+if ($user && !$insufficientRole) {
+    redirect($myDashboard);
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -45,19 +51,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($username === '' || $password === '') {
         $error = 'Please enter username and password.';
     } elseif (attempt_login($username, $password)) {
-        if ($returnTo !== '') {
+        $user = current_user();
+
+        $canUseReturnTo = true;
+        if ($requiredRole !== '' && !has_role($requiredRole)) {
+            $canUseReturnTo = false;
+        }
+        if ($returnTo !== '' && $canUseReturnTo) {
             redirect('/' . $returnTo);
         }
-        
-        $user = current_user();
-        if ($user['role'] === 'admin') {
-            redirect('/admin/index.php');
-        } elseif ($user['role'] === 'medical') {
-            redirect('/medical/index.php');
-        } elseif ($user['role'] === 'dental') {
-            redirect('/dental/index.php');
-        }
-        redirect('/');
+
+        redirect(dashboard_for_role((string)($user['role'] ?? '')));
     } else {
         $error = 'Invalid username or password.';
     }
@@ -106,9 +110,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <p class="small text-muted">Please enter your credentials to continue</p>
         </div>
 
-        <?php if ($mustLogoutToSwitch): ?>
+        <?php if ($user && $insufficientRole): ?>
           <div class="d-grid gap-3">
-            <a class="btn btn-primary fw-bold" href="<?= url('/auth/logout.php') ?>" style="border-radius: 12px; padding: 0.85rem; font-size: 1rem;">
+            <a class="btn btn-primary fw-bold" href="<?= url($myDashboard) ?>" style="border-radius: 12px; padding: 0.85rem; font-size: 1rem;">
+              Go to your dashboard
+            </a>
+            <a class="btn btn-outline-secondary fw-bold" href="<?= url('/auth/logout.php') ?>" style="border-radius: 12px; padding: 0.85rem; font-size: 1rem;">
               Logout
             </a>
             <a href="<?= url('/') ?>" class="btn btn-link btn-sm text-secondary text-decoration-none">
