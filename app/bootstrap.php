@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 $cfg = require __DIR__ . '/../config/app.php';
 
+date_default_timezone_set('Asia/Manila');
+
 session_name($cfg['session_name']);
 
 // Set session cookie path to the application subfolder

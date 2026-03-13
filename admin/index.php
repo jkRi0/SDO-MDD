@@ -84,6 +84,7 @@ try {
               <div class="small fw-bold text-white lh-1"><?= e(current_user()['fullname']) ?></div>
               <div class="text-white-50 lh-1 mt-1" style="font-size: 0.7rem;">Administrator</div>
             </div>
+            <a href="<?= url('/admin/statistics.php') ?>" class="btn btn-light btn-sm fw-bold px-3" style="border-radius: 8px;">Statistics</a>
             <a href="<?= url('/') ?>" class="btn btn-light btn-sm fw-bold px-3" style="border-radius: 8px;">Home</a>
             <a href="<?= url('/auth/logout.php') ?>" class="btn btn-outline-light btn-sm px-3" style="border-radius: 8px;">Logout</a>
           </div>
